@@ -66,14 +66,6 @@ export default function LoginPage() {
       {/* Card Principal de Login */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
         <div className="bg-white py-8 px-6 shadow-xl rounded-2xl border border-gray-200 sm:px-10 space-y-6">
-          <div className="bg-brand-50 p-4 rounded-xl border border-brand-100 flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-brand-900 leading-relaxed font-medium">
-              <span className="font-bold block text-brand-950 mb-0.5">Whitelist Estrita de Segurança</span>
-              O acesso é restrito exclusivamente a e-mails previamente autorizados pela Coordenação Geral do programa.
-            </div>
-          </div>
-
           {errorMsg && (
             <div className="bg-red-50 text-red-800 p-4 rounded-xl border-2 border-red-300 text-xs flex items-start gap-3 shadow-sm animate-pulse">
               <AlertCircle className="w-5 h-5 shrink-0 text-red-600 mt-0.5" />
