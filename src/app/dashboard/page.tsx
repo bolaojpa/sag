@@ -13,6 +13,18 @@ export default function DashboardPage() {
   const [regiao, setRegiao] = useState<string>('Polo Norte');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = '/login';
+      }
+    };
+    checkAuth();
+  }, []);
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => setIsRefreshing(false), 800);

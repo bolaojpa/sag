@@ -13,6 +13,18 @@ export default function IntercorrenciasPage() {
   const [regiao, setRegiao] = useState<string>('Polo Norte');
   const [showForm, setShowForm] = useState<boolean>(false);
 
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = '/login';
+      }
+    };
+    checkAuth();
+  }, []);
+
   const [intercorrenciasDemo, setIntercorrenciasDemo] = useState<Intercorrencia[]>([
     {
       id: 'int-1',

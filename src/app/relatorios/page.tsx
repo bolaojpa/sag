@@ -12,6 +12,18 @@ export default function RelatoriosPage() {
   const [regiao, setRegiao] = useState<string>('Polo Norte');
   const [selectedEscola, setSelectedEscola] = useState<string>('EMEF Anísio Teixeira');
 
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = '/login';
+      }
+    };
+    checkAuth();
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <div className="print:hidden">

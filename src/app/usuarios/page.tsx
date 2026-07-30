@@ -26,6 +26,18 @@ export default function UsuariosPage() {
   const [regiaoInput, setRegiaoInput] = useState('Polo Norte');
   const [feedback, setFeedback] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = '/login';
+      }
+    };
+    checkAuth();
+  }, []);
+
   const [usuariosDemo, setUsuariosDemo] = useState<AuthorizedUser[]>([
     {
       id: 'usr-1',

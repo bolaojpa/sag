@@ -31,7 +31,7 @@ export default function HubOperacionalPage() {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user && process.env.NODE_ENV === 'production') {
+      if (!user) {
         window.location.href = '/login';
       }
     };
