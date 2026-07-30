@@ -8,13 +8,8 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  // Se variáveis de ambiente não estiverem presentes, permite ambiente demo
-  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('mock-sag-project')) {
-    return response;
-  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cuuayomhetzomccrfqpp.supabase.co';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_4ZCz6B77Ki9qG56j4LsfsA_dqA2EeI4';
 
   const supabase = createServerClient(
     supabaseUrl,
@@ -43,7 +38,7 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/auth');
 
-  // 1. Redireciona usuários não autenticados para a tela de login
+  // 1. Redireciona QUALQUER usuário não autenticado para a tela de login
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';

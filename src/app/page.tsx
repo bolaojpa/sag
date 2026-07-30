@@ -26,6 +26,17 @@ export default function HubOperacionalPage() {
   ];
 
   useEffect(() => {
+    // Checagem de sessão do usuário no navegador
+    const checkAuth = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user && process.env.NODE_ENV === 'production') {
+        window.location.href = '/login';
+      }
+    };
+    checkAuth();
+
     // Inicializa o ouvinte de sincronização offline silenciosa
     const unsubscribe = initOfflineSyncListener((count) => {
       setSyncNotice(`${count} registro(s) salvos offline foram sincronizados com sucesso!`);
