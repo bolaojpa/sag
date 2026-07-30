@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Se as variáveis de ambiente não estiverem configuradas, prossegue normalmente para modo demo
+  // Se variáveis de ambiente não estiverem presentes, permite ambiente demo
   if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('mock-sag-project')) {
     return response;
   }
@@ -43,18 +43,37 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/auth');
 
-  // Redireciona usuários não autenticados para a tela de login
+  // 1. Redireciona usuários não autenticados para a tela de login
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // Redireciona usuários já autenticados que tentarem acessar a página de login para a home
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    return NextResponse.redirect(url);
+  // 2. Validação da Whitelist Estrita para Usuários Autenticados
+  if (user) {
+    // Verifica se existe perfil pré-autorizado para o usuário na tabela profiles
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, cargo')
+      .eq('id', user.id)
+      .single();
+
+    // Se o e-mail não possui perfil autorizado (e não é o admin supremo), desloga e barra o acesso
+    if (!profile && user.email?.toLowerCase() !== 'bolaojpa@gmail.com') {
+      await supabase.auth.signOut();
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('error', 'unauthorized');
+      return NextResponse.redirect(url);
+    }
+
+    // Se usuário já autenticado e autorizado tentar ir para a tela de login, manda para a home
+    if (isAuthRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;
@@ -62,13 +81,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - sw.js, manifest.json (PWA files)
-     */
     '/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

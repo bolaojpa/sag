@@ -1,12 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { School, ShieldCheck, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { School, ShieldAlert, Lock, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const errorType = searchParams.get('error');
+    if (errorType === 'unauthorized') {
+      setErrorMsg(
+        '🛑 Acesso Negado: Seu e-mail não possui autorização prévia da Coordenação Geral. Este sistema é exclusivo para servidores pré-cadastrados.'
+      );
+    } else if (errorType === 'auth_failed') {
+      setErrorMsg('Falha no processo de autenticação com o Google. Tente novamente.');
+    }
+  }, [searchParams]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -54,17 +67,17 @@ export default function LoginPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
         <div className="bg-white py-8 px-6 shadow-xl rounded-2xl border border-gray-200 sm:px-10 space-y-6">
           <div className="bg-brand-50 p-4 rounded-xl border border-brand-100 flex items-start gap-3">
-            <ShieldCheck className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
+            <ShieldAlert className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
             <div className="text-xs text-brand-900 leading-relaxed font-medium">
-              <span className="font-bold block text-brand-950 mb-0.5">Autenticação Obrigatória</span>
-              O acesso a este sistema é restrito a Agentes Educacionais, Gerentes de Polo e Coordenação cadastrados no banco de dados governamental.
+              <span className="font-bold block text-brand-950 mb-0.5">Whitelist Estrita de Segurança</span>
+              O acesso é restrito exclusivamente a e-mails previamente autorizados pela Coordenação Geral do programa.
             </div>
           </div>
 
           {errorMsg && (
-            <div className="bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-              <span>{errorMsg}</span>
+            <div className="bg-red-50 text-red-800 p-4 rounded-xl border-2 border-red-300 text-xs flex items-start gap-3 shadow-sm animate-pulse">
+              <AlertCircle className="w-5 h-5 shrink-0 text-red-600 mt-0.5" />
+              <div className="font-semibold leading-relaxed">{errorMsg}</div>
             </div>
           )}
 
@@ -81,7 +94,6 @@ export default function LoginPage() {
               </>
             ) : (
               <>
-                {/* SVG Ícone Oficial Google */}
                 <svg className="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
@@ -100,7 +112,7 @@ export default function LoginPage() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span>Entrar com Conta Google Institucional</span>
+                <span>Entrar com Conta Google Autorizada</span>
               </>
             )}
           </button>
@@ -108,12 +120,11 @@ export default function LoginPage() {
           <div className="pt-4 border-t border-gray-100 text-center">
             <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500 font-medium">
               <Lock className="w-3.5 h-3.5 text-gray-400" />
-              <span>Conexão Segura via Google OAuth 2.0 & Supabase RLS</span>
+              <span>Conexão Protegida com Controle de Whitelist</span>
             </div>
           </div>
         </div>
 
-        {/* Rodapé Institucional */}
         <p className="mt-6 text-center text-xs text-gray-500">
           &copy; {new Date().getFullYear()} Programa Iniciativa Futuro. Todos os direitos reservados.
         </p>
