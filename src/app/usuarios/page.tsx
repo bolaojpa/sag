@@ -34,12 +34,26 @@ export default function UsuariosPage() {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
+
       if (!user) {
         window.location.href = '/login';
-      } else {
-        setIsAuthenticated(true);
-        setIsAuthLoading(false);
+        return;
       }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, cargo')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile && user.email?.toLowerCase() !== 'bolaojpa@gmail.com') {
+        await supabase.auth.signOut();
+        window.location.href = '/login?error=unauthorized';
+        return;
+      }
+
+      setIsAuthenticated(true);
+      setIsAuthLoading(false);
     };
     checkAuth();
   }, []);
