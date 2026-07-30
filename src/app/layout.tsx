@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'SAG - Sistema de Acompanhamento de Gestão | Iniciativa Futuro',
+  title: 'SAG - Sistema de Acompanhamento de Gestão',
   description: 'Plataforma PWA de monitoramento educacional em tempo real e contingência offline.',
   manifest: '/manifest.json',
 };

@@ -61,10 +61,10 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div>
               <h1 className="font-bold text-sm sm:text-base leading-tight tracking-wide text-white">
-                Iniciativa Futuro
+                Sistema de Acompanhamento de Gestão
               </h1>
               <p className="text-xs text-brand-100 hidden sm:block">
-                Sistema de Acompanhamento de Gestão Educacional
+                Monitoramento Educacional em Tempo Real
               </p>
             </div>
           </div>

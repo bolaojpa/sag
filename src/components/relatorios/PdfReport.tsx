@@ -55,7 +55,7 @@ export const PdfReportView: React.FC<PdfReportProps> = ({
               SISTEMA DE ACOMPANHAMENTO DE GESTÃO (SAG)
             </div>
             <div className="text-sm font-bold text-gray-800">
-              PROGRAMA INICIATIVA FUTURO — RELATÓRIO OPERACIONAL A4
+              RELATÓRIO OPERACIONAL A4 — GESTÃO EDUCACIONAL
             </div>
             <div className="text-xs text-gray-600 mt-1">
               Documento Oficial de Monitoramento Pedagógico e Gestão de Campo

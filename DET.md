@@ -1,5 +1,5 @@
 # Documento de Especificação Técnica (DET)
-**Projeto:** Sistema de Acompanhamento de Gestão (SAG) - Iniciativa Futuro  
+**Projeto:** Sistema de Acompanhamento de Gestão (SAG)  
 **Versão:** 2.0 (Atualizada com simplificação de auditoria e contingência offline)  
 **Foco:** Arquitetura de Software, Regras de Negócio e UX/UI  
 

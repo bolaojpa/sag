@@ -1,5 +1,5 @@
 -- ==============================================================================
--- SAG - SISTEMA DE ACOMPANHAMENTO DE GESTÃO (INICIATIVA FUTURO v2.0)
+-- SAG - SISTEMA DE ACOMPANHAMENTO DE GESTÃO (v2.0)
 -- SCRIPT DE INICIALIZAÇÃO DO BANCO DE DADOS (SUPABASE POSTGRESQL + RLS)
 -- ==============================================================================
 -- ATENÇÃO: Diretrizes de Vocabulário Aplicadas

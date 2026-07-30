@@ -51,7 +51,7 @@ export default function DashboardPage() {
               </h1>
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              Visão consolidada em tempo real para tomada de decisão estratégica — Programa Iniciativa Futuro
+              Visão consolidada em tempo real para tomada de decisão estratégica
             </p>
           </div>
 

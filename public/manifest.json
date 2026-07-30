@@ -1,7 +1,7 @@
 {
   "name": "SAG - Sistema de Acompanhamento de Gestão",
   "short_name": "SAG",
-  "description": "Plataforma de acompanhamento educacional em tempo real - Iniciativa Futuro",
+  "description": "Plataforma de acompanhamento educacional em tempo real",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

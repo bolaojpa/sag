@@ -1,5 +1,5 @@
 -- ==============================================================================
--- SAG - SISTEMA DE ACOMPANHAMENTO DE GESTÃO (INICIATIVA FUTURO v2.0)
+-- SAG - SISTEMA DE ACOMPANHAMENTO DE GESTÃO (v2.0)
 -- SCRIPT DE WHITELIST ESTRITA E GESTÃO DE ACESSOS AUTORIZADOS
 -- ==============================================================================
 

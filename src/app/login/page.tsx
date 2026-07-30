@@ -53,7 +53,7 @@ function LoginContent() {
           <School className="w-10 h-10" />
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-          SAG - Iniciativa Futuro
+          SAG
         </h1>
         <p className="mt-1 text-sm font-semibold text-brand-700 uppercase tracking-wider">
           Sistema de Acompanhamento de Gestão
@@ -118,7 +118,7 @@ function LoginContent() {
         </div>
 
         <p className="mt-6 text-center text-xs text-gray-500">
-          &copy; {new Date().getFullYear()} Programa Iniciativa Futuro. Todos os direitos reservados.
+          &copy; {new Date().getFullYear()} SAG - Sistema de Acompanhamento de Gestão. Todos os direitos reservados.
         </p>
       </div>
     </div>
