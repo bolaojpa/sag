@@ -17,6 +17,10 @@ export default function HubOperacionalPage() {
   const [activeTab, setActiveTab] = useState<'acoes' | 'intercorrencia'>('acoes');
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
+  // Estados de proteção contra Flash de Conteúdo
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const escolasDemo: Escola[] = [
     { id: 'e1', nome: 'EMEF Anísio Teixeira', regiao: 'Polo Norte', lat_lng_oficial: '-3.7319,-38.5267', created_at: '', updated_at: '' },
     { id: 'e2', nome: 'EMEF Paulo Freire', regiao: 'Polo Norte', lat_lng_oficial: '-3.7380,-38.5300', created_at: '', updated_at: '' },
@@ -26,18 +30,19 @@ export default function HubOperacionalPage() {
   ];
 
   useEffect(() => {
-    // Checagem de sessão do usuário no navegador
     const checkAuth = async () => {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         window.location.href = '/login';
+      } else {
+        setIsAuthenticated(true);
+        setIsAuthLoading(false);
       }
     };
     checkAuth();
 
-    // Inicializa o ouvinte de sincronização offline silenciosa
     const unsubscribe = initOfflineSyncListener((count) => {
       setSyncNotice(`${count} registro(s) salvos offline foram sincronizados com sucesso!`);
       setTimeout(() => setSyncNotice(null), 5000);
@@ -47,6 +52,14 @@ export default function HubOperacionalPage() {
       if (unsubscribe) unsubscribe();
     };
   }, []);
+
+  if (isAuthLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
