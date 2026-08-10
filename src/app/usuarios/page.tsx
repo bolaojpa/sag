@@ -57,7 +57,7 @@ export default function UsuariosPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   React.useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndFetchWhitelist = async () => {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -79,10 +79,40 @@ export default function UsuariosPage() {
         return;
       }
 
+      // Busca e-mails reais cadastrados na tabela whitelist_emails
+      try {
+        const { data: dbWhitelist } = await supabase.from('whitelist_emails').select('*');
+        if (dbWhitelist && dbWhitelist.length > 0) {
+          const list: AuthorizedUser[] = dbWhitelist.map((item) => ({
+            id: item.id || item.email,
+            nome: item.nome || item.email,
+            email: item.email,
+            cargo: item.cargo || 'agente',
+            regiao: item.regiao_atuacao || 'Polo Norte',
+            status: 'ativo',
+          }));
+
+          if (!list.some((u) => u.email.toLowerCase() === 'bolaojpa@gmail.com')) {
+            list.unshift({
+              id: 'usr-1',
+              nome: 'Administrador Geral',
+              email: 'bolaojpa@gmail.com',
+              cargo: 'coordenacao_geral',
+              regiao: 'Todas as Jurisdições',
+              status: 'ativo',
+            });
+          }
+          setUsuariosDemo(list);
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar lista de whitelist:', err);
+      }
+
       setIsAuthenticated(true);
       setIsAuthLoading(false);
     };
-    checkAuth();
+
+    checkAuthAndFetchWhitelist();
   }, []);
 
   if (isAuthLoading || !isAuthenticated) {
@@ -106,17 +136,17 @@ export default function UsuariosPage() {
       email: emailClean,
       cargo: cargoInput,
       regiao: regiaoInput,
-      status: 'convidado',
+      status: 'ativo',
     };
 
-    // Salva na lista local para resposta rápida na UI
-    setUsuariosDemo((prev) => [newUser, ...prev]);
+    // Atualiza imediatamente na tela
+    setUsuariosDemo((prev) => [newUser, ...prev.filter(u => u.email !== emailClean)]);
 
-    // Persiste na tabela do Supabase (whitelist_emails)
+    // Insere no banco Supabase
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
-      await supabase.from('whitelist_emails').upsert(
+      const { error } = await supabase.from('whitelist_emails').upsert(
         {
           email: emailClean,
           nome: nomeClean,
@@ -125,14 +155,19 @@ export default function UsuariosPage() {
         },
         { onConflict: 'email' }
       );
-    } catch (err) {
-      console.warn('Persistência Supabase (whitelist_emails):', err);
+
+      if (error) {
+        setFeedback(`⚠️ Atenção: ${error.message}. Certifique-se de executar o SQL da whitelist no Supabase.`);
+      } else {
+        setFeedback(`✅ E-mail ${emailClean} cadastrado e salvo no banco de dados com sucesso!`);
+      }
+    } catch (err: any) {
+      setFeedback(`⚠️ Erro ao salvar no banco: ${err.message || 'Verifique as tabelas do Supabase.'}`);
     }
 
-    setFeedback(`E-mail ${emailClean} cadastrado na Whitelist com sucesso! Acesso liberado.`);
     setNomeInput('');
     setEmailInput('');
-    setTimeout(() => setFeedback(null), 5000);
+    setTimeout(() => setFeedback(null), 6000);
   };
 
   const handleRemoveUser = async (id: string, email: string) => {
