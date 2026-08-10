@@ -11,6 +11,47 @@ import { AlertOctagon, PlusCircle, ListFilter } from 'lucide-react';
 export default function IntercorrenciasPage() {
   const [cargo, setCargo] = useState<CargoType>('gerente_polo');
   const [regiao, setRegiao] = useState<string>('Polo Norte');
+  const [showForm, setShowForm] = useState<boolean>(false);
+
+  const [intercorrenciasDemo, setIntercorrenciasDemo] = useState<Intercorrencia[]>([
+    {
+      id: 'int-1',
+      agente_id: 'ag1',
+      escola_id: 'e1',
+      categoria: 'Frequência Irregular',
+      urgencia: 'alta',
+      descricao: 'Identificada ausência recorrente de 6 alunos no 4º ano B durante duas semanas consecutivas.',
+      status: 'aberto',
+      created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
+      updated_at: new Date().toISOString(),
+      escola: { id: 'e1', nome: 'EMEF Anísio Teixeira', regiao: 'Polo Norte', lat_lng_oficial: null, created_at: '', updated_at: '' },
+    },
+    {
+      id: 'int-2',
+      agente_id: 'ag2',
+      escola_id: 'e2',
+      categoria: 'Desafios de Aprendizagem',
+      urgencia: 'media',
+      descricao: 'Grupo de 12 estudantes necessitando de acompanhamento focado em nivelamento de leitura.',
+      status: 'em_analise',
+      created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
+      updated_at: new Date().toISOString(),
+      escola: { id: 'e2', nome: 'EMEF Paulo Freire', regiao: 'Polo Norte', lat_lng_oficial: null, created_at: '', updated_at: '' },
+    },
+    {
+      id: 'int-3',
+      agente_id: 'ag3',
+      escola_id: 'e3',
+      categoria: 'Infraestrutura',
+      urgencia: 'baixa',
+      descricao: 'Necessidade de manutenção no ponto de acesso à internet da sala dos professores.',
+      status: 'resolvido',
+      created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
+      updated_at: new Date().toISOString(),
+      escola: { id: 'e3', nome: 'EMEF Florestan Fernandes', regiao: 'Polo Sul', lat_lng_oficial: null, created_at: '', updated_at: '' },
+    },
+  ]);
+
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -70,45 +111,6 @@ export default function IntercorrenciasPage() {
       </div>
     );
   }
-
-  const [intercorrenciasDemo, setIntercorrenciasDemo] = useState<Intercorrencia[]>([
-    {
-      id: 'int-1',
-      agente_id: 'ag1',
-      escola_id: 'e1',
-      categoria: 'Frequência Irregular',
-      urgencia: 'alta',
-      descricao: 'Identificada ausência recorrente de 6 alunos no 4º ano B durante duas semanas consecutivas.',
-      status: 'aberto',
-      created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-      updated_at: new Date().toISOString(),
-      escola: { id: 'e1', nome: 'EMEF Anísio Teixeira', regiao: 'Polo Norte', lat_lng_oficial: null, created_at: '', updated_at: '' },
-    },
-    {
-      id: 'int-2',
-      agente_id: 'ag2',
-      escola_id: 'e2',
-      categoria: 'Desafios de Aprendizagem',
-      urgencia: 'media',
-      descricao: 'Grupo de 12 estudantes necessitando de acompanhamento focado em nivelamento de leitura.',
-      status: 'em_analise',
-      created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-      updated_at: new Date().toISOString(),
-      escola: { id: 'e2', nome: 'EMEF Paulo Freire', regiao: 'Polo Norte', lat_lng_oficial: null, created_at: '', updated_at: '' },
-    },
-    {
-      id: 'int-3',
-      agente_id: 'ag3',
-      escola_id: 'e3',
-      categoria: 'Infraestrutura',
-      urgencia: 'baixa',
-      descricao: 'Necessidade de manutenção no ponto de acesso à internet da sala dos professores.',
-      status: 'resolvido',
-      created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
-      updated_at: new Date().toISOString(),
-      escola: { id: 'e3', nome: 'EMEF Florestan Fernandes', regiao: 'Polo Sul', lat_lng_oficial: null, created_at: '', updated_at: '' },
-    },
-  ]);
 
   const handleStatusChange = (id: string, newStatus: StatusIntercorrenciaType) => {
     setIntercorrenciasDemo((prev) =>
