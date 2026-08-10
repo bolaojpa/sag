@@ -26,6 +26,33 @@ export default function UsuariosPage() {
   const [regiaoInput, setRegiaoInput] = useState('Polo Norte');
   const [feedback, setFeedback] = useState<string | null>(null);
 
+  const [usuariosDemo, setUsuariosDemo] = useState<AuthorizedUser[]>([
+    {
+      id: 'usr-1',
+      nome: 'Administrador Geral',
+      email: 'bolaojpa@gmail.com',
+      cargo: 'coordenacao_geral',
+      regiao: 'Todas as Jurisdições',
+      status: 'ativo',
+    },
+    {
+      id: 'usr-2',
+      nome: 'Maria Silva',
+      email: 'maria.silva@escola.edu.br',
+      cargo: 'agente',
+      regiao: 'Polo Norte',
+      status: 'ativo',
+    },
+    {
+      id: 'usr-3',
+      nome: 'Carlos Santos',
+      email: 'carlos.polo@escola.edu.br',
+      cargo: 'gerente_polo',
+      regiao: 'Polo Sul',
+      status: 'convidado',
+    },
+  ]);
+
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -65,33 +92,6 @@ export default function UsuariosPage() {
       </div>
     );
   }
-
-  const [usuariosDemo, setUsuariosDemo] = useState<AuthorizedUser[]>([
-    {
-      id: 'usr-1',
-      nome: 'Administrador Geral',
-      email: 'bolaojpa@gmail.com',
-      cargo: 'coordenacao_geral',
-      regiao: 'Todas as Jurisdições',
-      status: 'ativo',
-    },
-    {
-      id: 'usr-2',
-      nome: 'Maria Silva',
-      email: 'maria.agente@escola.gov.br',
-      cargo: 'agente',
-      regiao: 'Polo Norte',
-      status: 'ativo',
-    },
-    {
-      id: 'usr-3',
-      nome: 'Carlos Oliveira',
-      email: 'carlos.gerente@escola.gov.br',
-      cargo: 'gerente_polo',
-      regiao: 'Polo Norte',
-      status: 'convidado',
-    },
-  ]);
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
