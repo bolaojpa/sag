@@ -56,7 +56,7 @@ export default function IntercorrenciasPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   React.useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndFetchData = async () => {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -98,11 +98,43 @@ export default function IntercorrenciasPage() {
         }
       }
 
+      // Busca intercorrências do Supabase
+      try {
+        const { data: realData } = await supabase
+          .from('intercorrencias')
+          .select('*, escola:escolas(*)')
+          .order('created_at', { ascending: false });
+
+        if (realData && realData.length > 0) {
+          setIntercorrenciasDemo(realData);
+        }
+      } catch (err) {
+        console.warn('Busca de intercorrências Supabase:', err);
+      }
+
       setIsAuthenticated(true);
       setIsAuthLoading(false);
     };
-    checkAuth();
+
+    checkAuthAndFetchData();
   }, []);
+
+  const handleRefreshList = async () => {
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: realData } = await supabase
+        .from('intercorrencias')
+        .select('*, escola:escolas(*)')
+        .order('created_at', { ascending: false });
+
+      if (realData && realData.length > 0) {
+        setIntercorrenciasDemo(realData);
+      }
+    } catch (err) {
+      console.warn('Refresh intercorrencias:', err);
+    }
+  };
 
   if (isAuthLoading || !isAuthenticated) {
     return (
@@ -166,7 +198,10 @@ export default function IntercorrenciasPage() {
           <IntercorrenciaForm
             escolaId="e1"
             agenteId="agente_demo"
-            onSuccess={() => setShowForm(false)}
+            onSuccess={() => {
+              setShowForm(false);
+              handleRefreshList();
+            }}
           />
         ) : (
           <IntercorrenciaList

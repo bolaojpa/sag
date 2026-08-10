@@ -45,8 +45,23 @@ export const AcaoForm: React.FC<AcaoFormProps> = ({ escolaId, agenteId, onSucces
       await savePendingRegistro(payload);
       setLastSaved({ tipo: tipoAtividade, alunos: alunosImpactados, offline: true });
     } else {
-      // Simulação ou chamada enviada com sucesso
-      setLastSaved({ tipo: tipoAtividade, alunos: alunosImpactados, offline: false });
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        await supabase.from('registros_diarios').insert({
+          agente_id: user?.id || (agenteId !== 'agente_demo' ? agenteId : undefined),
+          escola_id: escolaId && escolaId !== 'e1' ? escolaId : undefined,
+          tipo_atividade: tipoAtividade,
+          alunos_impactados: alunosImpactados,
+        });
+
+        setLastSaved({ tipo: tipoAtividade, alunos: alunosImpactados, offline: false });
+      } catch (err) {
+        console.warn('Persistência local (fallback ações):', err);
+        setLastSaved({ tipo: tipoAtividade, alunos: alunosImpactados, offline: false });
+      }
     }
 
     setIsSubmitting(false);

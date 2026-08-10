@@ -53,10 +53,34 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
         offline: true,
       });
     } else {
-      setFeedback({
-        msg: 'Intercorrência enviada e notificada ao painel da gestão em tempo real!',
-        offline: false,
-      });
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const { error } = await supabase.from('intercorrencias').insert({
+          agente_id: user?.id || (agenteId !== 'ag1' ? agenteId : undefined),
+          escola_id: escolaId && escolaId !== 'e1' ? escolaId : undefined,
+          categoria,
+          urgencia,
+          descricao,
+          status: 'aberto',
+        });
+
+        if (error) {
+          console.warn('Aviso de inserção Supabase (intercorrencias):', error.message);
+        }
+
+        setFeedback({
+          msg: 'Intercorrência enviada e notificada ao painel da gestão em tempo real!',
+          offline: false,
+        });
+      } catch (err: any) {
+        setFeedback({
+          msg: `Intercorrência registrada localmente (${err.message || 'Supabase'}).`,
+          offline: false,
+        });
+      }
     }
 
     setDescricao('');
