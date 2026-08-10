@@ -63,10 +63,14 @@ export default function IntercorrenciasPage() {
 
       // Busca intercorrências reais do Supabase
       try {
-        const { data: realData } = await supabase
+        const { data: realData, error: dbError } = await supabase
           .from('intercorrencias')
-          .select('*, escola:escolas(*)')
+          .select('*')
           .order('created_at', { ascending: false });
+
+        if (dbError) {
+          console.error('Erro de busca no Supabase (intercorrencias):', dbError.message);
+        }
 
         if (realData) {
           setIntercorrenciasDemo(realData);
@@ -86,10 +90,14 @@ export default function IntercorrenciasPage() {
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
-      const { data: realData } = await supabase
+      const { data: realData, error: dbError } = await supabase
         .from('intercorrencias')
-        .select('*, escola:escolas(*)')
+        .select('*')
         .order('created_at', { ascending: false });
+
+      if (dbError) {
+        console.error('Erro de atualização na lista Supabase:', dbError.message);
+      }
 
       if (realData) {
         setIntercorrenciasDemo(realData);
