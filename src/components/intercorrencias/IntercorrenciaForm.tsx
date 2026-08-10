@@ -59,15 +59,12 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
         const { data: { user } } = await supabase.auth.getUser();
 
         const insertPayload: any = {
+          agente_id: user?.id,
           categoria,
           urgencia,
           descricao,
           status: 'aberto',
         };
-
-        if (user?.id) {
-          insertPayload.agente_id = user.id;
-        }
 
         if (escolaId && escolaId.length > 20) {
           insertPayload.escola_id = escolaId;
@@ -78,12 +75,12 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
         if (error) {
           console.error('Erro de gravação Supabase (intercorrencias):', error);
           setFeedback({
-            msg: `❌ Erro no Supabase: ${error.message}`,
+            msg: `❌ Erro do Banco Supabase: ${error.message} (Verifique permissões RLS)`,
             offline: false,
           });
         } else {
           setFeedback({
-            msg: '✅ Intercorrência gravada no banco de dados Supabase com sucesso!',
+            msg: '✅ Intercorrência enviada e salva no banco de dados Supabase com sucesso!',
             offline: false,
           });
           setDescricao('');
