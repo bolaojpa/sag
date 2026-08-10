@@ -58,32 +58,44 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        const { error } = await supabase.from('intercorrencias').insert({
-          agente_id: user?.id || (agenteId !== 'ag1' ? agenteId : undefined),
-          escola_id: escolaId && escolaId !== 'e1' ? escolaId : undefined,
+        const insertPayload: any = {
           categoria,
           urgencia,
           descricao,
           status: 'aberto',
-        });
+        };
 
-        if (error) {
-          console.warn('Aviso de inserção Supabase (intercorrencias):', error.message);
+        if (user?.id) {
+          insertPayload.agente_id = user.id;
         }
 
-        setFeedback({
-          msg: 'Intercorrência enviada e notificada ao painel da gestão em tempo real!',
-          offline: false,
-        });
+        if (escolaId && escolaId.length > 20) {
+          insertPayload.escola_id = escolaId;
+        }
+
+        const { error } = await supabase.from('intercorrencias').insert(insertPayload);
+
+        if (error) {
+          console.error('Erro de gravação Supabase (intercorrencias):', error);
+          setFeedback({
+            msg: `❌ Erro no Supabase: ${error.message}`,
+            offline: false,
+          });
+        } else {
+          setFeedback({
+            msg: '✅ Intercorrência gravada no banco de dados Supabase com sucesso!',
+            offline: false,
+          });
+          setDescricao('');
+        }
       } catch (err: any) {
         setFeedback({
-          msg: `Intercorrência registrada localmente (${err.message || 'Supabase'}).`,
+          msg: `❌ Erro de conexão: ${err.message || 'Falha de comunicação'}`,
           offline: false,
         });
       }
     }
 
-    setDescricao('');
     setIsSubmitting(false);
 
     if (onSuccess) {
