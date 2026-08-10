@@ -11,7 +11,65 @@ import { AlertOctagon, PlusCircle, ListFilter } from 'lucide-react';
 export default function IntercorrenciasPage() {
   const [cargo, setCargo] = useState<CargoType>('gerente_polo');
   const [regiao, setRegiao] = useState<string>('Polo Norte');
-  const [showForm, setShowForm] = useState<boolean>(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const userEmail = user.email?.toLowerCase() || '';
+
+      if (userEmail !== 'bolaojpa@gmail.com') {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, cargo')
+          .eq('id', user.id)
+          .single();
+
+        if (!profile) {
+          const { data: whitelist } = await supabase
+            .from('whitelist_emails')
+            .select('email, cargo, regiao_atuacao, nome')
+            .ilike('email', userEmail)
+            .single();
+
+          if (whitelist) {
+            await supabase.from('profiles').upsert({
+              id: user.id,
+              email: user.email,
+              nome: whitelist.nome || user.email,
+              cargo: whitelist.cargo || 'agente',
+              regiao_atuacao: whitelist.regiao_atuacao || 'Polo Norte',
+            });
+          } else {
+            await supabase.auth.signOut();
+            window.location.href = '/login?error=unauthorized';
+            return;
+          }
+        }
+      }
+
+      setIsAuthenticated(true);
+      setIsAuthLoading(false);
+    };
+    checkAuth();
+  }, []);
+
+  if (isAuthLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   const [intercorrenciasDemo, setIntercorrenciasDemo] = useState<Intercorrencia[]>([
     {

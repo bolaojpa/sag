@@ -47,23 +47,45 @@ export async function middleware(request: NextRequest) {
 
   // 2. Validação da Whitelist Estrita para Usuários Autenticados
   if (user) {
-    // Verifica se existe perfil pré-autorizado para o usuário na tabela profiles
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, cargo')
-      .eq('id', user.id)
-      .single();
+    const userEmail = user.email?.toLowerCase() || '';
 
-    // Se o e-mail não possui perfil autorizado (e não é o admin supremo), desloga e barra o acesso
-    if (!profile && user.email?.toLowerCase() !== 'bolaojpa@gmail.com') {
-      await supabase.auth.signOut();
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('error', 'unauthorized');
-      return NextResponse.redirect(url);
+    if (userEmail !== 'bolaojpa@gmail.com') {
+      // 1. Checa se o perfil existe em profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, cargo')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile) {
+        // 2. Fallback: Checa se o e-mail consta na tabela whitelist_emails
+        const { data: whitelist } = await supabase
+          .from('whitelist_emails')
+          .select('email, cargo, regiao_atuacao, nome')
+          .ilike('email', userEmail)
+          .single();
+
+        if (whitelist) {
+          // Cria/Sincroniza automaticamente o perfil do servidor no banco
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            email: user.email,
+            nome: whitelist.nome || user.email,
+            cargo: whitelist.cargo || 'agente',
+            regiao_atuacao: whitelist.regiao_atuacao || 'Polo Norte',
+          });
+        } else {
+          // Se não estiver em nenhuma das duas listas, desloga e manda para a tela de login
+          await supabase.auth.signOut();
+          const url = request.nextUrl.clone();
+          url.pathname = '/login';
+          url.searchParams.set('error', 'unauthorized');
+          return NextResponse.redirect(url);
+        }
+      }
     }
 
-    // Se usuário já autenticado e autorizado tentar ir para a tela de login, manda para a home
+    // Se usuário autenticado e autorizado tentar ir para a tela de login, manda para a home
     if (isAuthRoute) {
       const url = request.nextUrl.clone();
       url.pathname = '/';

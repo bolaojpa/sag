@@ -26,16 +26,36 @@ export default function RelatoriosPage() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, cargo')
-        .eq('id', user.id)
-        .single();
+      const userEmail = user.email?.toLowerCase() || '';
 
-      if (!profile && user.email?.toLowerCase() !== 'bolaojpa@gmail.com') {
-        await supabase.auth.signOut();
-        window.location.href = '/login?error=unauthorized';
-        return;
+      if (userEmail !== 'bolaojpa@gmail.com') {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, cargo')
+          .eq('id', user.id)
+          .single();
+
+        if (!profile) {
+          const { data: whitelist } = await supabase
+            .from('whitelist_emails')
+            .select('email, cargo, regiao_atuacao, nome')
+            .ilike('email', userEmail)
+            .single();
+
+          if (whitelist) {
+            await supabase.from('profiles').upsert({
+              id: user.id,
+              email: user.email,
+              nome: whitelist.nome || user.email,
+              cargo: whitelist.cargo || 'agente',
+              regiao_atuacao: whitelist.regiao_atuacao || 'Polo Norte',
+            });
+          } else {
+            await supabase.auth.signOut();
+            window.location.href = '/login?error=unauthorized';
+            return;
+          }
+        }
       }
 
       setIsAuthenticated(true);
