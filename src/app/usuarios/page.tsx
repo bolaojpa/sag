@@ -93,28 +93,57 @@ export default function UsuariosPage() {
     );
   }
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.trim() || !nomeInput.trim()) return;
 
+    const emailClean = emailInput.trim().toLowerCase();
+    const nomeClean = nomeInput.trim();
+
     const newUser: AuthorizedUser = {
       id: `usr-${Date.now()}`,
-      nome: nomeInput.trim(),
-      email: emailInput.trim().toLowerCase(),
+      nome: nomeClean,
+      email: emailClean,
       cargo: cargoInput,
       regiao: regiaoInput,
       status: 'convidado',
     };
 
+    // Salva na lista local para resposta rápida na UI
     setUsuariosDemo((prev) => [newUser, ...prev]);
-    setFeedback(`E-mail ${newUser.email} cadastrado na Whitelist com sucesso! Acesso liberado.`);
+
+    // Persiste na tabela do Supabase (whitelist_emails)
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      await supabase.from('whitelist_emails').upsert(
+        {
+          email: emailClean,
+          nome: nomeClean,
+          cargo: cargoInput,
+          regiao_atuacao: regiaoInput,
+        },
+        { onConflict: 'email' }
+      );
+    } catch (err) {
+      console.warn('Persistência Supabase (whitelist_emails):', err);
+    }
+
+    setFeedback(`E-mail ${emailClean} cadastrado na Whitelist com sucesso! Acesso liberado.`);
     setNomeInput('');
     setEmailInput('');
     setTimeout(() => setFeedback(null), 5000);
   };
 
-  const handleRemoveUser = (id: string) => {
+  const handleRemoveUser = async (id: string, email: string) => {
     setUsuariosDemo((prev) => prev.filter((u) => u.id !== id));
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      await supabase.from('whitelist_emails').delete().eq('email', email.toLowerCase());
+    } catch (err) {
+      console.warn('Exclusão Whitelist Supabase:', err);
+    }
   };
 
   const cargoBadges: Record<CargoType, string> = {
@@ -286,7 +315,7 @@ export default function UsuariosPage() {
                     <td className="p-3 text-center">
                       {user.email !== 'bolaojpa@gmail.com' && (
                         <button
-                          onClick={() => handleRemoveUser(user.id)}
+                          onClick={() => handleRemoveUser(user.id, user.email)}
                           className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors"
                           title="Revogar Autorização de Acesso"
                         >
