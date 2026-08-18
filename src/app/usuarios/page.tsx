@@ -1,12 +1,24 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Header } from '@/components/layout/Header';
 import { Nav } from '@/components/layout/Nav';
 import { CargoType, Escola } from '@/types/database';
 import { UserPlus, Shield, UserCheck, Trash2, CheckCircle2, Mail, Building2, MapPin, Plus, Users, Compass } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { AdminSchoolMapPicker } from '@/components/map/AdminSchoolMapPicker';
+
+const AdminSchoolMapPicker = dynamic(
+  () => import('@/components/map/AdminSchoolMapPicker').then((mod) => mod.AdminSchoolMapPicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-64 bg-slate-100 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-500 font-extrabold text-xs">
+        Carregando seletor OpenStreetMap Leaflet...
+      </div>
+    ),
+  }
+);
 
 interface AuthorizedUser {
   id: string;

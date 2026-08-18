@@ -1,16 +1,28 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Header } from '@/components/layout/Header';
 import { Nav } from '@/components/layout/Nav';
 import { CheckInButton } from '@/components/checkin/CheckInButton';
 import { AcaoForm } from '@/components/acoes/AcaoForm';
 import { IntercorrenciaForm } from '@/components/intercorrencias/IntercorrenciaForm';
-import { AgentSchoolMapView } from '@/components/map/AgentSchoolMapView';
 import { Escola } from '@/types/database';
 import { initOfflineSyncListener } from '@/lib/offline/sync';
 import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+
+const AgentSchoolMapView = dynamic(
+  () => import('@/components/map/AgentSchoolMapView').then((mod) => mod.AgentSchoolMapView),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-80 bg-slate-100 rounded-2xl border-2 border-slate-200 flex items-center justify-center text-slate-500 font-extrabold text-xs">
+        Carregando mapa OpenStreetMap...
+      </div>
+    ),
+  }
+);
 
 export default function HubOperacionalPage() {
   const { user, profile, cargo, regiao, loading } = useAuth();
