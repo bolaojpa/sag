@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MapPin, CheckCircle2, Loader2, AlertCircle, Building2 } from 'lucide-react';
+import { MapPin, CheckCircle2, Loader2, AlertCircle, Building2, Navigation } from 'lucide-react';
 import { Escola } from '@/types/database';
 
 interface CheckInButtonProps {
@@ -53,7 +53,6 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({
         },
         (error) => {
           console.warn('Geolocalização não concedida ou indisponível:', error.message);
-          // Registro transparente mesmo sem GPS preciso
           const coords = 'Sem sinal GPS (Modo Transparente)';
           const timestamp = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
@@ -77,26 +76,32 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({
   };
 
   return (
-    <div className="card-institutional p-5 border-l-4 border-l-brand-600 bg-white">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-brand-600" />
-          <h2 className="text-base font-bold text-gray-900">Check-in de Visita Escolar</h2>
+    <div className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-red-50 text-red-600 rounded-xl shadow-inner border border-red-100">
+            <Building2 className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Check-in de Visita Escolar</h2>
+            <p className="text-xs text-slate-500 font-medium">Registro presencial de assiduidade de campo</p>
+          </div>
         </div>
-        <span className="text-xs bg-brand-50 text-brand-700 font-semibold px-2 py-0.5 rounded-full border border-brand-200">
+        <span className="text-xs bg-red-50 text-red-700 font-extrabold px-3 py-1 rounded-full border border-red-200/80 flex items-center gap-1 shadow-sm">
+          <Navigation className="w-3 h-3 text-red-600 animate-pulse" />
           Mobile GPS
         </span>
       </div>
 
       {/* Seletor de Escola */}
-      <div className="mb-4">
-        <label className="block text-xs font-semibold text-gray-700 mb-1">
+      <div className="mb-5">
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
           Selecione a Unidade Escolar Atendida:
         </label>
         <select
           value={selectedEscolaId}
           onChange={(e) => onSelectEscola(e.target.value)}
-          className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 font-medium"
+          className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 font-semibold shadow-inner"
         >
           {escolas.map((e) => (
             <option key={e.id} value={e.id}>
@@ -110,23 +115,23 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({
       <button
         onClick={handleCheckIn}
         disabled={loading}
-        className="w-full btn-primary py-3.5 px-4 text-base flex items-center justify-center gap-2 shadow-md active:scale-[0.99] transition-transform"
+        className="w-full btn-primary py-4 px-5 text-base font-extrabold flex items-center justify-center gap-2.5 shadow-lg shadow-red-600/20 active:scale-[0.99] transition-all"
       >
         {loading ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Verificando localização no servidor...</span>
+            <span>Validando localização GPS...</span>
           </>
         ) : (
           <>
-            <MapPin className="w-5 h-5" />
+            <MapPin className="w-5 h-5 text-white" />
             <span>Confirmar Check-in na Escola</span>
           </>
         )}
       </button>
 
       {errorMsg && (
-        <div className="mt-3 p-3 bg-red-50 text-red-700 text-xs rounded-lg border border-red-200 flex items-center gap-2">
+        <div className="mt-3 p-3.5 bg-red-50 text-red-700 text-xs font-semibold rounded-xl border border-red-200 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
           <span>{errorMsg}</span>
         </div>
@@ -134,16 +139,16 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({
 
       {/* Card Informativo de Check-in Confirmado */}
       {lastCheckIn && (
-        <div className="mt-4 p-3.5 bg-emerald-50 text-emerald-900 text-xs rounded-lg border border-emerald-200 flex items-start gap-3 shadow-inner">
+        <div className="mt-4 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-900 text-xs rounded-xl border border-emerald-200/80 flex items-start gap-3 shadow-inner animate-fade-in">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-bold text-sm text-emerald-950">Check-in Registrado com Sucesso!</p>
-            <p className="mt-0.5">
-              <span className="font-semibold">{lastCheckIn.escolaNome}</span> às{' '}
-              <span className="font-bold">{lastCheckIn.timestamp}</span>
+            <p className="font-extrabold text-sm text-emerald-950">Check-in Registrado com Sucesso!</p>
+            <p className="mt-0.5 font-medium text-emerald-800">
+              Unidade: <span className="font-bold text-emerald-950">{lastCheckIn.escolaNome}</span> às{' '}
+              <span className="font-extrabold">{lastCheckIn.timestamp}</span>
             </p>
-            <p className="text-[11px] text-emerald-700 mt-1">
-              Coordenadas validadas em segundo plano: {lastCheckIn.coords}
+            <p className="text-[11px] text-emerald-700 mt-1 font-mono">
+              Coordenadas de campo: {lastCheckIn.coords}
             </p>
           </div>
         </div>

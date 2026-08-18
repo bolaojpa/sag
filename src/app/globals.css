@@ -4,29 +4,49 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
     --primary: 0 72% 51%;
     --primary-foreground: 0 0% 100%;
   }
 
   body {
-    background-color: #ffffff;
-    color: #111827;
+    background-color: #f8fafc;
+    color: #0f172a;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 }
 
-/* Custom UI styling for high contrast red & white design system */
+/* Custom UI styling for high contrast red & white modern CRM design system */
 .btn-primary {
-  @apply bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+  @apply bg-gradient-to-r from-red-600 via-brand-600 to-red-700 hover:from-red-700 hover:to-brand-800 active:scale-[0.99] text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg hover:shadow-red-600/20 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
 }
 
 .btn-secondary {
-  @apply bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-800 font-semibold rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+  @apply bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.99] text-slate-800 font-semibold rounded-xl transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
 }
 
 .card-institutional {
-  @apply bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow;
+  @apply bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200;
+}
+
+.crm-glass-card {
+  @apply bg-white/90 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200;
+}
+
+/* Smooth custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

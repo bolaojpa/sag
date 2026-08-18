@@ -51,9 +51,9 @@ export const Nav: React.FC = () => {
   const visibleNavItems = allNavItems.filter((item) => item.roles.includes(cargo));
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-16 z-30">
+    <nav className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm sticky top-16 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-around sm:justify-start sm:space-x-8 overflow-x-auto">
+        <div className="flex justify-around sm:justify-start space-x-1 sm:space-x-4 overflow-x-auto py-2">
           {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -61,13 +61,13 @@ export const Nav: React.FC = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex items-center gap-2 py-3 px-3.5 border-b-2 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                className={`inline-flex items-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                   isActive
-                    ? 'border-brand-600 text-brand-700 bg-brand-50/60 font-bold'
-                    : 'border-transparent text-gray-600 hover:text-brand-600 hover:border-gray-300 hover:bg-gray-50'
+                    ? 'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border border-red-200 shadow-sm ring-1 ring-red-500/20'
+                    : 'text-slate-600 hover:text-red-700 hover:bg-slate-100/70 border border-transparent'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-brand-600' : 'text-gray-400'}`} />
+                <Icon className={`w-4 h-4 transition-transform duration-200 ${isActive ? 'text-red-600 scale-110' : 'text-slate-400'}`} />
                 <span>{item.label}</span>
               </Link>
             );

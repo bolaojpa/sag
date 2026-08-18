@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AlertOctagon, Send, CheckCircle2, WifiOff } from 'lucide-react';
+import { AlertOctagon, Send, CheckCircle2, WifiOff, ShieldAlert } from 'lucide-react';
 import { CategoriaIntercorrencia, UrgenciaType } from '@/types/database';
 import { savePendingIntercorrencia } from '@/lib/offline/db';
 
@@ -22,7 +22,6 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ msg: string; offline: boolean } | null>(null);
 
-  // Categorias estritamente alinhadas com as diretrizes institucionais de vocabulário
   const categoriasOficiais: CategoriaIntercorrencia[] = [
     'Infraestrutura',
     'Frequência Irregular',
@@ -105,22 +104,33 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
   };
 
   return (
-    <div className="card-institutional p-5 border-l-4 border-l-red-600 bg-white">
-      <div className="flex items-center gap-2 mb-4">
-        <AlertOctagon className="w-5 h-5 text-red-600" />
-        <h2 className="text-base font-bold text-gray-900">Registrar Nova Intercorrência</h2>
+    <div className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-red-50 text-red-600 rounded-xl shadow-inner border border-red-100">
+            <AlertOctagon className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Registrar Nova Intercorrência</h2>
+            <p className="text-xs text-slate-500 font-medium">Notificação imediata para atendimento prioritário da gestão</p>
+          </div>
+        </div>
+        <span className="text-xs bg-red-50 text-red-700 font-extrabold px-3 py-1 rounded-full border border-red-200/80 flex items-center gap-1 shadow-sm">
+          <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
+          Semáforo Alerta
+        </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Categoria Oficial */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
             Categoria do Problema:
           </label>
           <select
             value={categoria}
             onChange={(e) => setCategoria(e.target.value as CategoriaIntercorrencia)}
-            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-red-500 font-medium"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 font-semibold shadow-inner"
           >
             {categoriasOficiais.map((cat) => (
               <option key={cat} value={cat}>
@@ -132,54 +142,54 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
 
         {/* Nível de Urgência (Semáforo) */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-2">
-            Classificação de Urgência (Semáforo):
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+            Classificação de Urgência (Semáforo Institucional):
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             <button
               type="button"
               onClick={() => setUrgencia('baixa')}
-              className={`p-3 rounded-lg border flex flex-col items-center justify-center gap-1 transition-all ${
+              className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 ${
                 urgencia === 'baixa'
-                  ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500 font-bold'
-                  : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-emerald-50/50'
+                  ? 'bg-emerald-50 border-emerald-500 text-emerald-950 ring-2 ring-emerald-500 font-extrabold shadow-md'
+                  : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-emerald-50/40 hover:border-emerald-300 font-semibold'
               }`}
             >
-              <span className="text-xl">🟢</span>
-              <span className="text-xs">Baixa</span>
+              <span className="text-2xl">🟢</span>
+              <span className="text-xs tracking-tight">Baixa Urgência</span>
             </button>
 
             <button
               type="button"
               onClick={() => setUrgencia('media')}
-              className={`p-3 rounded-lg border flex flex-col items-center justify-center gap-1 transition-all ${
+              className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 ${
                 urgencia === 'media'
-                  ? 'bg-amber-50 border-amber-500 text-amber-900 ring-2 ring-amber-500 font-bold'
-                  : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-amber-50/50'
+                  ? 'bg-amber-50 border-amber-500 text-amber-950 ring-2 ring-amber-500 font-extrabold shadow-md'
+                  : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-amber-50/40 hover:border-amber-300 font-semibold'
               }`}
             >
-              <span className="text-xl">🟡</span>
-              <span className="text-xs">Média</span>
+              <span className="text-2xl">🟡</span>
+              <span className="text-xs tracking-tight">Média Urgência</span>
             </button>
 
             <button
               type="button"
               onClick={() => setUrgencia('alta')}
-              className={`p-3 rounded-lg border flex flex-col items-center justify-center gap-1 transition-all ${
+              className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 ${
                 urgencia === 'alta'
-                  ? 'bg-red-50 border-red-500 text-red-900 ring-2 ring-red-500 font-bold animate-pulse'
-                  : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-red-50/50'
+                  ? 'bg-red-50 border-red-500 text-red-950 ring-2 ring-red-500 font-extrabold shadow-md animate-pulse'
+                  : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-red-50/40 hover:border-red-300 font-semibold'
               }`}
             >
-              <span className="text-xl">🔴</span>
-              <span className="text-xs">Alta</span>
+              <span className="text-2xl">🔴</span>
+              <span className="text-xs tracking-tight">Alta Urgência</span>
             </button>
           </div>
         </div>
 
         {/* Descrição dos Fatos */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
             Descrição Detalhada do Fato:
           </label>
           <textarea
@@ -188,23 +198,23 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
             placeholder="Relate os detalhes operacionais ou pedagógicos observados..."
-            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-red-500 font-medium"
+            className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 font-medium shadow-inner"
           />
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full btn-primary bg-red-600 hover:bg-red-700 py-3.5 px-4 text-base flex items-center justify-center gap-2 shadow-md active:scale-[0.99]"
+          className="w-full btn-primary py-4 px-5 text-base font-extrabold flex items-center justify-center gap-2.5 shadow-lg shadow-red-600/20 active:scale-[0.99] transition-all"
         >
-          <Send className="w-5 h-5" />
-          <span>Enviar Intercorrência</span>
+          <Send className="w-5 h-5 text-white" />
+          <span>Enviar Intercorrência à Gestão</span>
         </button>
       </form>
 
       {feedback && (
         <div
-          className={`mt-4 p-3 rounded-lg border text-xs flex items-center gap-2.5 ${
+          className={`mt-4 p-4 rounded-xl border text-xs flex items-center gap-3 shadow-inner ${
             feedback.offline
               ? 'bg-amber-50 text-amber-900 border-amber-200'
               : 'bg-emerald-50 text-emerald-900 border-emerald-200'
@@ -215,7 +225,7 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
           ) : (
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           )}
-          <span>{feedback.msg}</span>
+          <span className="font-bold">{feedback.msg}</span>
         </div>
       )}
     </div>
