@@ -26,28 +26,19 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
   const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
   const [geocodeFeedback, setGeocodeFeedback] = useState<string | null>(null);
 
-  // Geocodificação Reversa Nominatim (Lat/Lng -> Endereço Texto)
+  // Geocodificação Reversa via Proxy API Server Node.js (Sem Erros CORS/Navegador)
   const fetchReverseGeocode = async (targetLat: number, targetLng: number) => {
     setIsGeocoding(true);
     setGeocodeFeedback(null);
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${targetLat}&lon=${targetLng}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'Accept-Language': 'pt-BR,pt;q=0.9',
-            'User-Agent': 'SAG-IniciativaFuturo-App/2.0',
-          },
-        }
-      );
-
+      const response = await fetch(`/api/geocode/reverse?lat=${targetLat}&lng=${targetLng}`);
       const data = await response.json();
 
-      if (data && data.display_name) {
-        const formattedAddress = data.display_name;
+      if (data && data.address) {
+        const formattedAddress = data.address;
         setEndereco(formattedAddress);
         onCoordinatesChange({ lat: targetLat, lng: targetLng, endereco: formattedAddress });
-        setGeocodeFeedback(`✅ Geocodificação Reversa: Endereço capturado pela posição do pino no mapa!`);
+        setGeocodeFeedback(`✅ Geocodificação Reversa: Endereço capturado pelo pino no mapa!`);
       } else {
         onCoordinatesChange({ lat: targetLat, lng: targetLng });
         setGeocodeFeedback(`📍 Coordenadas atualizadas pelo pino: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
@@ -125,7 +116,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
     };
   }, []);
 
-  // Geocodificação Direta com a API do Nominatim (Texto -> Lat/Lng)
+  // Geocodificação Direta por Texto via Proxy API Server
   const handleGeocodeSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!endereco.trim()) return;
@@ -134,47 +125,34 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
     setGeocodeFeedback(null);
 
     try {
-      const searchQuery = endereco.toLowerCase().includes('joão pessoa')
-        ? endereco
-        : `${endereco}, João Pessoa, Paraíba, Brasil`;
-
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          searchQuery
-        )}&limit=1`,
-        {
-          headers: {
-            'Accept-Language': 'pt-BR,pt;q=0.9',
-            'User-Agent': 'SAG-IniciativaFuturo-App/2.0',
-          },
-        }
-      );
-
+      const response = await fetch(`/api/geocode/search?q=${encodeURIComponent(endereco)}`);
       const data = await response.json();
 
-      if (data && data.length > 0) {
-        const foundLat = parseFloat(data[0].lat);
-        const foundLng = parseFloat(data[0].lon);
+      if (data && data.lat && data.lng) {
+        const foundLat = data.lat;
+        const foundLng = data.lng;
+        const foundAddress = data.displayName || endereco;
 
         setLat(foundLat);
         setLng(foundLng);
+        setEndereco(foundAddress);
 
         if (leafletMapRef.current && markerRef.current) {
           leafletMapRef.current.setView([foundLat, foundLng], 16);
           markerRef.current.setLatLng([foundLat, foundLng]);
         }
 
-        onCoordinatesChange({ lat: foundLat, lng: foundLng, endereco });
-        setGeocodeFeedback(`✅ Coordenadas capturadas via Nominatim: ${foundLat.toFixed(4)}, ${foundLng.toFixed(4)}`);
+        onCoordinatesChange({ lat: foundLat, lng: foundLng, endereco: foundAddress });
+        setGeocodeFeedback(`✅ Coordenadas capturadas: ${foundLat.toFixed(4)}, ${foundLng.toFixed(4)}`);
       } else {
         setGeocodeFeedback(
-          '⚠️ Endereço não encontrado na busca por texto. Clique no pino do mapa para a Geocodificação Reversa!'
+          '⚠️ Endereço não encontrado na busca por texto. Clique diretamente no mapa abaixo para capturar via pino!'
         );
       }
     } catch (err: any) {
-      console.warn('Erro ao consultar API Nominatim:', err);
+      console.warn('Erro ao consultar API Server Proxy:', err);
       setGeocodeFeedback(
-        '⚠️ Falha na busca por texto. Você pode clicar no mapa para capturar o endereço do pino automaticamente.'
+        '⚠️ Falha na busca por texto. Clique no pino do mapa para capturar o endereço automaticamente.'
       );
     } finally {
       setIsGeocoding(false);
@@ -186,11 +164,11 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-800 uppercase tracking-wider">
           <Compass className="w-4 h-4 text-red-600" />
-          <span>Geocodificação Reversa & Direta (Nominatim OpenStreetMap)</span>
+          <span>Geocodificação Reversa & Direta (Server Proxy OpenStreetMap)</span>
         </div>
         <span className="text-[11px] bg-red-50 text-red-700 font-extrabold px-2.5 py-0.5 rounded-full border border-red-200 flex items-center gap-1">
           <Navigation className="w-3 h-3 text-red-600" />
-          Pinagem Automática
+          Pinagem Ativa
         </span>
       </div>
 
