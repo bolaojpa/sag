@@ -200,7 +200,11 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
           <input
             type="text"
             value={endereco}
-            onChange={(e) => setEndereco(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setEndereco(val);
+              onCoordinatesChange({ lat, lng, endereco: val });
+            }}
             placeholder="Digite o endereço OU clique no mapa abaixo para capturar via pino..."
             className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500 shadow-inner"
           />

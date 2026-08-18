@@ -33,6 +33,8 @@ export interface Escola {
   endereco?: string | null;
   regiao: string;
   grupo_id?: string | null;
+  data_programada?: string | null;
+  turno_programado?: string | null;
   latitude?: number | null;
   longitude?: number | null;
   lat_lng_oficial: string | null;
