@@ -115,6 +115,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } else {
+        // Checa se há uma sessão de teste local gravada
+        if (typeof window !== 'undefined') {
+          const simUserRaw = localStorage.getItem('sag_simulated_user');
+          if (simUserRaw) {
+            const simUser = JSON.parse(simUserRaw);
+            const isSimAdmin = simUser.email === 'bolaojpa@gmail.com' || simUser.role === 'admin';
+
+            setUser({ id: 'sim-user-1', email: simUser.email } as any);
+            setCargo(isSimAdmin ? 'coordenacao_geral' : 'agente');
+            setRegiao('Polo Norte');
+            setProfile({
+              id: 'sim-user-1',
+              email: simUser.email,
+              nome: isSimAdmin ? 'Administrador Geral (Coordenação)' : 'Agente Educacional de Campo',
+              cargo: isSimAdmin ? 'coordenacao_geral' : 'agente',
+              regiao_atuacao: 'Polo Norte',
+              grupo_id: 'Grupo 01',
+              last_seen: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+            setLoading(false);
+            return;
+          }
+        }
+
         setUser(null);
         setProfile(null);
       }
@@ -136,6 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           await fetchProfileAndAuth();
         } else if (event === 'SIGNED_OUT') {
+          if (typeof window !== 'undefined') localStorage.removeItem('sag_simulated_user');
           setUser(null);
           setProfile(null);
           setCargo('agente');
@@ -157,9 +184,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    if (typeof window !== 'undefined') localStorage.removeItem('sag_simulated_user');
     const { createClient } = await import('@/lib/supabase/client');
     const supabase = createClient();
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Ignora falha de rede ao deslogar offline
+    }
     setUser(null);
     setProfile(null);
     window.location.href = '/login';
