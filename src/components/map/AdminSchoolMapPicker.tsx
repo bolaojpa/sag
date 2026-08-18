@@ -231,3 +231,5 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
     </div>
   );
 };
+
+export default AdminSchoolMapPicker;

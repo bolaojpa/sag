@@ -13,7 +13,7 @@ import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert } from 'lucide-rea
 import { useAuth } from '@/context/AuthContext';
 
 const AgentSchoolMapView = dynamic(
-  () => import('@/components/map/AgentSchoolMapView').then((mod) => mod.AgentSchoolMapView),
+  () => import('@/components/map/AgentSchoolMapView'),
   {
     ssr: false,
     loading: () => (

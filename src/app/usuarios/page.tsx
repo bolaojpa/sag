@@ -9,7 +9,7 @@ import { UserPlus, Shield, UserCheck, Trash2, CheckCircle2, Mail, Building2, Map
 import { useAuth } from '@/context/AuthContext';
 
 const AdminSchoolMapPicker = dynamic(
-  () => import('@/components/map/AdminSchoolMapPicker').then((mod) => mod.AdminSchoolMapPicker),
+  () => import('@/components/map/AdminSchoolMapPicker'),
   {
     ssr: false,
     loading: () => (

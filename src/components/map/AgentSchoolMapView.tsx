@@ -157,3 +157,5 @@ export const AgentSchoolMapView: React.FC<AgentSchoolMapViewProps> = ({
     </div>
   );
 };
+
+export default AgentSchoolMapView;
