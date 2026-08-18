@@ -6,9 +6,10 @@ import { Nav } from '@/components/layout/Nav';
 import { CheckInButton } from '@/components/checkin/CheckInButton';
 import { AcaoForm } from '@/components/acoes/AcaoForm';
 import { IntercorrenciaForm } from '@/components/intercorrencias/IntercorrenciaForm';
+import { AgentSchoolMapView } from '@/components/map/AgentSchoolMapView';
 import { Escola } from '@/types/database';
 import { initOfflineSyncListener } from '@/lib/offline/sync';
-import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert, Building2 } from 'lucide-react';
+import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function HubOperacionalPage() {
@@ -18,13 +19,11 @@ export default function HubOperacionalPage() {
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   const [escolasList, setEscolasList] = useState<Escola[]>([
-    { id: 'e1', nome: 'EMEF Anísio Teixeira', regiao: 'Polo Norte', lat_lng_oficial: '-7.1153,-34.8610', created_at: '', updated_at: '' },
-    { id: 'e2', nome: 'EMEF Paulo Freire', regiao: 'Polo Norte', lat_lng_oficial: '-7.1280,-34.8500', created_at: '', updated_at: '' },
-    { id: 'e3', nome: 'EMEF Florestan Fernandes', regiao: 'Polo Sul', lat_lng_oficial: '-7.1700,-34.8800', created_at: '', updated_at: '' },
-    { id: 'e4', nome: 'EMEF Darcy Ribeiro', regiao: 'Polo Sul', lat_lng_oficial: '-7.1800,-34.8900', created_at: '', updated_at: '' },
-    { id: 'e5', nome: 'EMEF Celso Furtado', regiao: 'Polo Leste', lat_lng_oficial: '-7.1400,-34.8300', created_at: '', updated_at: '' },
-    { id: 'e6', nome: 'EMEF João XXIII', regiao: 'Polo Leste', lat_lng_oficial: '-7.1350,-34.8400', created_at: '', updated_at: '' },
-    { id: 'e7', nome: 'EMEF Severino Patrício', regiao: 'Polo Oeste', lat_lng_oficial: '-7.1500,-34.9100', created_at: '', updated_at: '' },
+    { id: 'e1', nome: 'EMEF Anísio Teixeira', endereco: 'R. Anísio Teixeira, Jaguaribe, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', latitude: -7.1350, longitude: -34.8700, lat_lng_oficial: '-7.1350,-34.8700', statusVisita: 'visitado', created_at: '', updated_at: '' },
+    { id: 'e2', nome: 'EMEF Paulo Freire', endereco: 'Av. Mandacaru, Mandacaru, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', latitude: -7.1100, longitude: -34.8600, lat_lng_oficial: '-7.1100,-34.8600', statusVisita: 'pendente', created_at: '', updated_at: '' },
+    { id: 'e3', nome: 'EMEF Florestan Fernandes', endereco: 'R. Mangabeira, Mangabeira, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', latitude: -7.1700, longitude: -34.8500, lat_lng_oficial: '-7.1700,-34.8500', statusVisita: 'pendente', created_at: '', updated_at: '' },
+    { id: 'e4', nome: 'EMEF Darcy Ribeiro', endereco: 'Av. Principal, Bancários, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', latitude: -7.1500, longitude: -34.8400, lat_lng_oficial: '-7.1500,-34.8400', statusVisita: 'visitado', created_at: '', updated_at: '' },
+    { id: 'e5', nome: 'EMEF Celso Furtado', endereco: 'R. Tambaú, Tambaú, João Pessoa - PB', regiao: 'Polo Leste', grupo_id: 'Grupo 03', latitude: -7.1153, longitude: -34.8210, lat_lng_oficial: '-7.1153,-34.8210', statusVisita: 'pendente', created_at: '', updated_at: '' },
   ]);
 
   useEffect(() => {
@@ -63,6 +62,10 @@ export default function HubOperacionalPage() {
     );
   }
 
+  // Filtra as escolas vinculadas ao grupo do agente (padrão Grupo 01 se não especificado)
+  const agentGrupo = profile?.grupo_id || 'Grupo 01';
+  const agentEscolas = escolasList.filter((e) => !e.grupo_id || e.grupo_id === agentGrupo);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Header />
@@ -94,8 +97,8 @@ export default function HubOperacionalPage() {
               {profile?.nome || 'Servidor Educacional'}
             </h2>
             <p className="text-xs text-slate-600 font-semibold mt-0.5">
-              Cargo: <span className="font-extrabold text-slate-900 uppercase">{cargo.replace('_', ' ')}</span> | Região:{' '}
-              <span className="font-extrabold text-red-700">{regiao}</span>
+              Cargo: <span className="font-extrabold text-slate-900 uppercase">{cargo.replace('_', ' ')}</span> | Grupo Escalado:{' '}
+              <span className="font-extrabold text-red-700">{agentGrupo}</span>
             </p>
           </div>
           <div className="flex items-center gap-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
@@ -140,9 +143,15 @@ export default function HubOperacionalPage() {
           </div>
         </div>
 
+        {/* NOVO MÓDULO: Mapa do OpenStreetMap Leaflet.js para Agentes com Botão de Rota GPS */}
+        <AgentSchoolMapView
+          escolas={agentEscolas.length > 0 ? agentEscolas : escolasList}
+          grupoNome={agentGrupo}
+        />
+
         {/* Módulo 1: Check-in Transparente via GPS */}
         <CheckInButton
-          escolas={escolasList}
+          escolas={agentEscolas.length > 0 ? agentEscolas : escolasList}
           selectedEscolaId={selectedEscolaId}
           onSelectEscola={setSelectedEscolaId}
         />

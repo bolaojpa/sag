@@ -46,8 +46,6 @@ CREATE TYPE public.status_intercorrencia_type AS ENUM (
   'resolvido'
 );
 
--- 3. CRIAÇÃO DAS TABELAS PRIMÁRIAS
-
 -- 3.1. Tabela: profiles
 CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -55,20 +53,27 @@ CREATE TABLE public.profiles (
   email TEXT NOT NULL UNIQUE,
   cargo public.cargo_type NOT NULL DEFAULT 'agente',
   regiao_atuacao TEXT,
+  grupo_id TEXT DEFAULT 'Grupo 01',
   last_seen TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- 3.2. Tabela: escolas
+-- 3.2. Tabela: escolas (Geocodificação OpenStreetMap + Leaflet.js)
 CREATE TABLE public.escolas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome TEXT NOT NULL,
+  endereco TEXT,
   regiao TEXT NOT NULL,
+  grupo_id TEXT DEFAULT 'Grupo 01',
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
   lat_lng_oficial TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+
 
 -- 3.3. Tabela: visitas (Check-in via GPS)
 CREATE TABLE public.visitas (

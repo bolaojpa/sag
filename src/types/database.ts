@@ -21,6 +21,7 @@ export interface Profile {
   email: string;
   cargo: CargoType;
   regiao_atuacao: string | null;
+  grupo_id?: string | null;
   last_seen: string | null;
   created_at: string;
   updated_at: string;
@@ -29,10 +30,16 @@ export interface Profile {
 export interface Escola {
   id: string;
   nome: string;
+  endereco?: string | null;
   regiao: string;
+  grupo_id?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   lat_lng_oficial: string | null;
   created_at: string;
   updated_at: string;
+  // Propriedades calculadas/auxiliares
+  statusVisita?: 'visitado' | 'pendente';
 }
 
 export interface Visita {

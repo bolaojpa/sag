@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Nav } from '@/components/layout/Nav';
 import { CargoType, Escola } from '@/types/database';
-import { UserPlus, Shield, UserCheck, Trash2, CheckCircle2, Mail, Building2, MapPin, Plus, ListFilter, Users } from 'lucide-react';
+import { UserPlus, Shield, UserCheck, Trash2, CheckCircle2, Mail, Building2, MapPin, Plus, Users, Compass } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { AdminSchoolMapPicker } from '@/components/map/AdminSchoolMapPicker';
 
 interface AuthorizedUser {
   id: string;
@@ -13,6 +14,7 @@ interface AuthorizedUser {
   email: string;
   cargo: CargoType;
   regiao: string;
+  grupo_id?: string;
   status: 'ativo' | 'convidado';
 }
 
@@ -25,12 +27,16 @@ export default function UsuariosPage() {
   const [emailInput, setEmailInput] = useState('');
   const [cargoInput, setCargoInput] = useState<CargoType>('agente');
   const [regiaoInput, setRegiaoInput] = useState('Polo Norte');
+  const [grupoInput, setGrupoInput] = useState('Grupo 01');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Escolas Form State (João Pessoa)
   const [escolaNome, setEscolaNome] = useState('');
   const [escolaPolo, setEscolaPolo] = useState('Polo Norte');
-  const [escolaCoords, setEscolaCoords] = useState('-7.1153,-34.8610');
+  const [escolaGrupo, setEscolaGrupo] = useState('Grupo 01');
+  const [escolaEndereco, setEscolaEndereco] = useState('Av. Epitácio Pessoa, João Pessoa, PB');
+  const [escolaLat, setEscolaLat] = useState<number>(-7.1153);
+  const [escolaLng, setEscolaLng] = useState<number>(-34.8610);
   const [escolaFeedback, setEscolaFeedback] = useState<string | null>(null);
 
   const [usuariosList, setUsuariosList] = useState<AuthorizedUser[]>([
@@ -40,18 +46,17 @@ export default function UsuariosPage() {
       email: 'bolaojpa@gmail.com',
       cargo: 'coordenacao_geral',
       regiao: 'Todas as Jurisdições',
+      grupo_id: 'Grupo 01',
       status: 'ativo',
     },
   ]);
 
   const [escolasList, setEscolasList] = useState<Escola[]>([
-    { id: 'e1', nome: 'EMEF Anísio Teixeira', regiao: 'Polo Norte', lat_lng_oficial: '-7.1153,-34.8610', created_at: '', updated_at: '' },
-    { id: 'e2', nome: 'EMEF Paulo Freire', regiao: 'Polo Norte', lat_lng_oficial: '-7.1280,-34.8500', created_at: '', updated_at: '' },
-    { id: 'e3', nome: 'EMEF Florestan Fernandes', regiao: 'Polo Sul', lat_lng_oficial: '-7.1700,-34.8800', created_at: '', updated_at: '' },
-    { id: 'e4', nome: 'EMEF Darcy Ribeiro', regiao: 'Polo Sul', lat_lng_oficial: '-7.1800,-34.8900', created_at: '', updated_at: '' },
-    { id: 'e5', nome: 'EMEF Celso Furtado', regiao: 'Polo Leste', lat_lng_oficial: '-7.1400,-34.8300', created_at: '', updated_at: '' },
-    { id: 'e6', nome: 'EMEF João XXIII', regiao: 'Polo Leste', lat_lng_oficial: '-7.1350,-34.8400', created_at: '', updated_at: '' },
-    { id: 'e7', nome: 'EMEF Severino Patrício', regiao: 'Polo Oeste', lat_lng_oficial: '-7.1500,-34.9100', created_at: '', updated_at: '' },
+    { id: 'e1', nome: 'EMEF Anísio Teixeira', endereco: 'R. Anísio Teixeira, Jaguaribe, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', latitude: -7.1350, longitude: -34.8700, lat_lng_oficial: '-7.1350,-34.8700', created_at: '', updated_at: '' },
+    { id: 'e2', nome: 'EMEF Paulo Freire', endereco: 'Av. Mandacaru, Mandacaru, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', latitude: -7.1100, longitude: -34.8600, lat_lng_oficial: '-7.1100,-34.8600', created_at: '', updated_at: '' },
+    { id: 'e3', nome: 'EMEF Florestan Fernandes', endereco: 'R. Mangabeira, Mangabeira, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', latitude: -7.1700, longitude: -34.8500, lat_lng_oficial: '-7.1700,-34.8500', created_at: '', updated_at: '' },
+    { id: 'e4', nome: 'EMEF Darcy Ribeiro', endereco: 'Av. Principal, Bancários, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', latitude: -7.1500, longitude: -34.8400, lat_lng_oficial: '-7.1500,-34.8400', created_at: '', updated_at: '' },
+    { id: 'e5', nome: 'EMEF Celso Furtado', endereco: 'R. Tambaú, Tambaú, João Pessoa - PB', regiao: 'Polo Leste', grupo_id: 'Grupo 03', latitude: -7.1153, longitude: -34.8210, lat_lng_oficial: '-7.1153,-34.8210', created_at: '', updated_at: '' },
   ]);
 
   const fetchWhitelist = async () => {
@@ -67,6 +72,7 @@ export default function UsuariosPage() {
           email: item.email,
           cargo: item.cargo || 'agente',
           regiao: item.regiao_atuacao || 'Polo Norte',
+          grupo_id: item.grupo_id || 'Grupo 01',
           status: 'ativo',
         }));
 
@@ -77,6 +83,7 @@ export default function UsuariosPage() {
             email: 'bolaojpa@gmail.com',
             cargo: 'coordenacao_geral',
             regiao: 'Todas as Jurisdições',
+            grupo_id: 'Grupo 01',
             status: 'ativo',
           });
         }
@@ -121,6 +128,7 @@ export default function UsuariosPage() {
       email: emailClean,
       cargo: cargoInput,
       regiao: regiaoInput,
+      grupo_id: grupoInput,
       status: 'ativo',
     };
 
@@ -135,6 +143,7 @@ export default function UsuariosPage() {
           nome: nomeClean,
           cargo: cargoInput,
           regiao_atuacao: regiaoInput,
+          grupo_id: grupoInput,
         },
         { onConflict: 'email' }
       );
@@ -169,12 +178,17 @@ export default function UsuariosPage() {
     if (!escolaNome.trim()) return;
 
     const nomeClean = escolaNome.trim();
+    const coordsString = `${escolaLat.toFixed(6)},${escolaLng.toFixed(6)}`;
 
     const newEscola: Escola = {
       id: `esc-${Date.now()}`,
       nome: nomeClean,
+      endereco: escolaEndereco,
       regiao: escolaPolo,
-      lat_lng_oficial: escolaCoords.trim(),
+      grupo_id: escolaGrupo,
+      latitude: escolaLat,
+      longitude: escolaLng,
+      lat_lng_oficial: coordsString,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -186,14 +200,18 @@ export default function UsuariosPage() {
       const supabase = createClient();
       const { error } = await supabase.from('escolas').insert({
         nome: nomeClean,
+        endereco: escolaEndereco,
         regiao: escolaPolo,
-        lat_lng_oficial: escolaCoords.trim(),
+        grupo_id: escolaGrupo,
+        latitude: escolaLat,
+        longitude: escolaLng,
+        lat_lng_oficial: coordsString,
       });
 
       if (error) {
         setEscolaFeedback(`⚠️ Erro no Supabase: ${error.message}`);
       } else {
-        setEscolaFeedback(`✅ Escola Municipal "${nomeClean}" cadastrada no sistema com sucesso!`);
+        setEscolaFeedback(`✅ Escola Municipal "${nomeClean}" com coordenadas (${escolaLat.toFixed(4)}, ${escolaLng.toFixed(4)}) salva no banco!`);
         fetchEscolas();
       }
     } catch (err: any) {
@@ -225,14 +243,14 @@ export default function UsuariosPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Header />
       <Nav />
 
@@ -243,11 +261,11 @@ export default function UsuariosPage() {
             <div className="flex items-center gap-2">
               <Shield className="w-6 h-6 text-red-600" />
               <h1 className="text-xl font-extrabold text-slate-900">
-                Gestão de Usuários & Escolas Municipais (João Pessoa)
+                Painel do Administrador: Acessos, Grupos & Geocodificação OpenStreetMap
               </h1>
             </div>
             <p className="text-xs text-slate-600 mt-1 font-medium">
-              Painel estratégico da Coordenação Geral: Controle de Whitelist e Delegação de Unidades Escolares.
+              Controle de Whitelist, Delegação de Grupos de Agentes e Geocodificação via Nominatim (Leaflet.js).
             </p>
           </div>
 
@@ -262,7 +280,7 @@ export default function UsuariosPage() {
               }`}
             >
               <Users className="w-4 h-4" />
-              <span>Whitelist ({usuariosList.length})</span>
+              <span>Whitelist & Grupos ({usuariosList.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('escolas')}
@@ -273,12 +291,12 @@ export default function UsuariosPage() {
               }`}
             >
               <Building2 className="w-4 h-4" />
-              <span>Escolas Municipais ({escolasList.length})</span>
+              <span>Escolas & Leaflet.js ({escolasList.length})</span>
             </button>
           </div>
         </div>
 
-        {/* MÓDULO 1: WHITELIST DE USUÁRIOS */}
+        {/* MÓDULO 1: WHITELIST DE USUÁRIOS E VÍNCULO DE GRUPO */}
         {activeTab === 'whitelist' && (
           <div className="space-y-6">
             {feedback && (
@@ -294,10 +312,10 @@ export default function UsuariosPage() {
             <div className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <UserPlus className="w-5 h-5 text-red-600" />
-                <h2 className="text-base font-extrabold text-slate-900">Pré-Autorizar Novo E-mail no Sistema</h2>
+                <h2 className="text-base font-extrabold text-slate-900">Pré-Autorizar Novo E-mail e Atribuir Grupo</h2>
               </div>
 
-              <form onSubmit={handleAddUser} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <form onSubmit={handleAddUser} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Nome Completo do Servidor:
@@ -345,7 +363,7 @@ export default function UsuariosPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Polo / Região de Atuação:
+                    Polo / Região:
                   </label>
                   <select
                     value={regiaoInput}
@@ -360,7 +378,22 @@ export default function UsuariosPage() {
                   </select>
                 </div>
 
-                <div className="sm:col-span-2 lg:col-span-4 mt-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Grupo de Campo Vinculado:
+                  </label>
+                  <select
+                    value={grupoInput}
+                    onChange={(e) => setGrupoInput(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="Grupo 01">Grupo 01</option>
+                    <option value="Grupo 02">Grupo 02</option>
+                    <option value="Grupo 03">Grupo 03</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2 lg:col-span-5 mt-2">
                   <button
                     type="submit"
                     className="w-full sm:w-auto btn-primary py-3.5 px-6 text-xs flex items-center justify-center gap-2 font-extrabold shadow-md"
@@ -375,7 +408,7 @@ export default function UsuariosPage() {
             {/* Tabela CRM de Usuários Autorizados */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
               <h2 className="text-base font-extrabold text-slate-900 mb-4 pb-2 border-b border-slate-200">
-                Lista de E-mails Autorizados no Sistema ({usuariosList.length})
+                Lista de E-mails Autorizados e Grupos ({usuariosList.length})
               </h2>
 
               <div className="overflow-x-auto">
@@ -385,6 +418,7 @@ export default function UsuariosPage() {
                       <th className="p-3">Servidor</th>
                       <th className="p-3">E-mail Autorizado</th>
                       <th className="p-3">Nível de Acesso (Cargo)</th>
+                      <th className="p-3">Grupo Escalado</th>
                       <th className="p-3">Polo / Região</th>
                       <th className="p-3 text-center">Status</th>
                       <th className="p-3 text-center">Ações</th>
@@ -401,6 +435,11 @@ export default function UsuariosPage() {
                         <td className="p-3">
                           <span className="bg-red-50 text-red-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-red-200">
                             {cargoBadges[user.cargo]}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className="bg-blue-50 text-blue-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-blue-200">
+                            {user.grupo_id || 'Grupo 01'}
                           </span>
                         </td>
                         <td className="p-3 text-slate-700 font-semibold">{user.regiao}</td>
@@ -429,7 +468,7 @@ export default function UsuariosPage() {
           </div>
         )}
 
-        {/* MÓDULO 2: GESTÃO DE ESCOLAS MUNICIPAIS DE JOÃO PESSOA */}
+        {/* MÓDULO 2: GESTÃO DE ESCOLAS, GEOCODIFICAÇÃO NOMINATIM E LEAFLET.JS */}
         {activeTab === 'escolas' && (
           <div className="space-y-6">
             {escolaFeedback && (
@@ -441,74 +480,91 @@ export default function UsuariosPage() {
               </div>
             )}
 
-            {/* Cadastro de Escola Municipal */}
-            <div className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
+            {/* Cadastro de Escola Municipal + Geocodificação Nominatim + Mapa Auxiliar Leaflet */}
+            <div className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-6">
+              <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-red-600" />
-                <h2 className="text-base font-extrabold text-slate-900">Cadastrar Nova Escola Municipal de João Pessoa</h2>
+                <h2 className="text-base font-extrabold text-slate-900">
+                  Cadastro de Escola Municipal com Geocodificação Nominatim (OpenStreetMap)
+                </h2>
               </div>
 
-              <form onSubmit={handleAddEscola} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Nome Oficial da Escola:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={escolaNome}
-                    onChange={(e) => setEscolaNome(e.target.value)}
-                    placeholder="Ex: EMEF João XXIII"
-                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500"
-                  />
+              <form onSubmit={handleAddEscola} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Nome Oficial da Escola:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={escolaNome}
+                      onChange={(e) => setEscolaNome(e.target.value)}
+                      placeholder="Ex: EMEF João XXIII"
+                      className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Polo / Regional:
+                    </label>
+                    <select
+                      value={escolaPolo}
+                      onChange={(e) => setEscolaPolo(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="Polo Norte">Polo Norte</option>
+                      <option value="Polo Sul">Polo Sul</option>
+                      <option value="Polo Leste">Polo Leste</option>
+                      <option value="Polo Oeste">Polo Oeste</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Grupo Responsável Delegado:
+                    </label>
+                    <select
+                      value={escolaGrupo}
+                      onChange={(e) => setEscolaGrupo(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="Grupo 01">Grupo 01</option>
+                      <option value="Grupo 02">Grupo 02</option>
+                      <option value="Grupo 03">Grupo 03</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Polo / Regional de João Pessoa:
-                  </label>
-                  <select
-                    value={escolaPolo}
-                    onChange={(e) => setEscolaPolo(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500"
-                  >
-                    <option value="Polo Norte">Polo Norte</option>
-                    <option value="Polo Sul">Polo Sul</option>
-                    <option value="Polo Leste">Polo Leste</option>
-                    <option value="Polo Oeste">Polo Oeste</option>
-                  </select>
-                </div>
+                {/* Componente Leaflet de Geocodificação Nominatim + Seleção Interativa no Mapa */}
+                <AdminSchoolMapPicker
+                  initialLat={escolaLat}
+                  initialLng={escolaLng}
+                  initialEndereco={escolaEndereco}
+                  onCoordinatesChange={({ lat, lng, endereco }) => {
+                    setEscolaLat(lat);
+                    setEscolaLng(lng);
+                    if (endereco) setEscolaEndereco(endereco);
+                  }}
+                />
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Coordenadas GPS (Lat, Lng):
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={escolaCoords}
-                    onChange={(e) => setEscolaCoords(e.target.value)}
-                    placeholder="-7.1153,-34.8610"
-                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-
-                <div className="sm:col-span-3 mt-2">
                   <button
                     type="submit"
-                    className="w-full sm:w-auto btn-primary py-3.5 px-6 text-xs flex items-center justify-center gap-2 font-extrabold shadow-md"
+                    className="w-full sm:w-auto btn-primary py-4 px-8 text-xs flex items-center justify-center gap-2 font-extrabold shadow-lg"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Adicionar Escola Municipal ao Sistema</span>
+                    <span>Salvar Escola com Coordenadas no Banco de Dados</span>
                   </button>
                 </div>
               </form>
             </div>
 
-            {/* Tabela de Escolas Cadastradas */}
+            {/* Tabela de Escolas Cadastradas com Coordenadas e Grupo */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
               <h2 className="text-base font-extrabold text-slate-900 mb-4 pb-2 border-b border-slate-200">
-                Rede de Escolas Municipais de João Pessoa Cadastradas ({escolasList.length})
+                Rede de Escolas Cadastradas no Banco ({escolasList.length})
               </h2>
 
               <div className="overflow-x-auto">
@@ -517,7 +573,8 @@ export default function UsuariosPage() {
                     <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-300">
                       <th className="p-3">Unidade Escolar</th>
                       <th className="p-3">Polo/Região</th>
-                      <th className="p-3">Coordenadas GPS</th>
+                      <th className="p-3">Grupo Delegado</th>
+                      <th className="p-3">Latitude / Longitude</th>
                       <th className="p-3 text-center">Status</th>
                       <th className="p-3 text-center">Ações</th>
                     </tr>
@@ -525,22 +582,37 @@ export default function UsuariosPage() {
                   <tbody className="divide-y divide-slate-200 font-medium">
                     {escolasList.map((escola) => (
                       <tr key={escola.id} className="hover:bg-slate-50/80">
-                        <td className="p-3 font-extrabold text-slate-900 flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-red-600" />
-                          <span>{escola.nome}</span>
+                        <td className="p-3 font-extrabold text-slate-900">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-red-600" />
+                            <span>{escola.nome}</span>
+                          </div>
+                          {escola.endereco && (
+                            <p className="text-[11px] text-slate-500 font-medium ml-6">{escola.endereco}</p>
+                          )}
                         </td>
                         <td className="p-3">
                           <span className="bg-slate-100 text-slate-800 font-extrabold px-2.5 py-0.5 rounded-full border border-slate-200">
                             {escola.regiao}
                           </span>
                         </td>
-                        <td className="p-3 text-slate-600 font-mono flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{escola.lat_lng_oficial || 'N/A'}</span>
+                        <td className="p-3">
+                          <span className="bg-blue-50 text-blue-800 font-extrabold px-2.5 py-0.5 rounded-full border border-blue-200">
+                            {escola.grupo_id || 'Grupo 01'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-slate-600 font-mono font-bold">
+                          <div className="flex items-center gap-1 text-red-700">
+                            <MapPin className="w-3.5 h-3.5 text-red-600" />
+                            <span>
+                              {escola.latitude ? escola.latitude.toFixed(4) : '-7.1153'},{' '}
+                              {escola.longitude ? escola.longitude.toFixed(4) : '-34.8610'}
+                            </span>
+                          </div>
                         </td>
                         <td className="p-3 text-center">
                           <span className="bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
-                            🟢 Ativa para Agentes
+                            🟢 Pista Leaflet Pronta
                           </span>
                         </td>
                         <td className="p-3 text-center">
