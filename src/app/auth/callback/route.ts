@@ -9,8 +9,8 @@ export async function GET(request: Request) {
 
   if (code) {
     const cookieStore = cookies();
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mock-sag-project.supabase.co';
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-anon-key';
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cuuayomhetzomccrfqpp.supabase.co';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_4ZCz6B77Ki9qG56j4LsfsA_dqA2EeI4';
 
     const supabase = createServerClient(
       supabaseUrl,
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
                 cookieStore.set(name, value, options)
               );
             } catch {
-              // Server component exception handling
+              // Contexto de server component
             }
           },
         },
@@ -35,10 +35,45 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const userEmail = user.email?.toLowerCase() || '';
+
+        if (userEmail !== 'bolaojpa@gmail.com') {
+          // Checa se o e-mail consta na Whitelist do sistema
+          const { data: whitelist } = await supabase
+            .from('whitelist_emails')
+            .select('email, cargo, regiao_atuacao, nome')
+            .ilike('email', userEmail)
+            .single();
+
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, cargo')
+            .eq('id', user.id)
+            .single();
+
+          if (!whitelist && !profile) {
+            // E-mail não autorizado! Encerra sessão imediatamente e manda para o login
+            await supabase.auth.signOut();
+            return NextResponse.redirect(`${origin}/login?error=unauthorized`);
+          } else if (whitelist && !profile) {
+            // Sincroniza o perfil do servidor autorizado
+            await supabase.from('profiles').upsert({
+              id: user.id,
+              email: user.email,
+              nome: whitelist.nome || user.email,
+              cargo: whitelist.cargo || 'agente',
+              regiao_atuacao: whitelist.regiao_atuacao || 'Polo Norte',
+            });
+          }
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
 
-  // Se houver falha, redireciona para o login com indicação de erro
   return NextResponse.redirect(`${origin}/login?error=auth_failed`);
 }
