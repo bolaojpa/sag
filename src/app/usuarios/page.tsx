@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Nav } from '@/components/layout/Nav';
 import { CargoType } from '@/types/database';
-import { UserPlus, Shield, UserCheck, Trash2, CheckCircle2, AlertCircle, Mail, Building } from 'lucide-react';
+import { UserPlus, Shield, UserCheck, Trash2, CheckCircle2, Mail } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface AuthorizedUser {
   id: string;
@@ -16,8 +17,7 @@ interface AuthorizedUser {
 }
 
 export default function UsuariosPage() {
-  const [cargo, setCargo] = useState<CargoType>('coordenacao_geral');
-  const [regiao, setRegiao] = useState<string>('Polo Norte');
+  const { loading } = useAuth();
 
   // Form State
   const [nomeInput, setNomeInput] = useState('');
@@ -26,122 +26,55 @@ export default function UsuariosPage() {
   const [regiaoInput, setRegiaoInput] = useState('Polo Norte');
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const [usuariosDemo, setUsuariosDemo] = useState<AuthorizedUser[]>([
+  const [usuariosList, setUsuariosList] = useState<AuthorizedUser[]>([
     {
       id: 'usr-1',
-      nome: 'Administrador Geral',
+      nome: 'Administrador Geral (Coordenação)',
       email: 'bolaojpa@gmail.com',
       cargo: 'coordenacao_geral',
       regiao: 'Todas as Jurisdições',
       status: 'ativo',
     },
-    {
-      id: 'usr-2',
-      nome: 'Maria Silva',
-      email: 'maria.silva@escola.edu.br',
-      cargo: 'agente',
-      regiao: 'Polo Norte',
-      status: 'ativo',
-    },
-    {
-      id: 'usr-3',
-      nome: 'Carlos Santos',
-      email: 'carlos.polo@escola.edu.br',
-      cargo: 'gerente_polo',
-      regiao: 'Polo Sul',
-      status: 'convidado',
-    },
   ]);
 
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  React.useEffect(() => {
-    const checkAuthAndFetchWhitelist = async () => {
+  const fetchWhitelist = async () => {
+    try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: dbWhitelist } = await supabase.from('whitelist_emails').select('*');
 
-      if (!user) {
-        window.location.href = '/login';
-        return;
-      }
+      if (dbWhitelist && dbWhitelist.length > 0) {
+        const list: AuthorizedUser[] = dbWhitelist.map((item) => ({
+          id: item.id || item.email,
+          nome: item.nome || item.email,
+          email: item.email,
+          cargo: item.cargo || 'agente',
+          regiao: item.regiao_atuacao || 'Polo Norte',
+          status: 'ativo',
+        }));
 
-      const userEmail = user.email?.toLowerCase() || '';
-
-      if (userEmail !== 'bolaojpa@gmail.com') {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, cargo')
-          .eq('id', user.id)
-          .single();
-
-        if (!profile) {
-          const { data: whitelist } = await supabase
-            .from('whitelist_emails')
-            .select('email, cargo, regiao_atuacao, nome')
-            .ilike('email', userEmail)
-            .single();
-
-          if (whitelist) {
-            await supabase.from('profiles').upsert({
-              id: user.id,
-              email: user.email,
-              nome: whitelist.nome || user.email,
-              cargo: whitelist.cargo || 'agente',
-              regiao_atuacao: whitelist.regiao_atuacao || 'Polo Norte',
-            });
-          } else {
-            await supabase.auth.signOut();
-            window.location.href = '/login?error=unauthorized';
-            return;
-          }
-        }
-      }
-
-      // Busca e-mails reais cadastrados na tabela whitelist_emails
-      try {
-        const { data: dbWhitelist } = await supabase.from('whitelist_emails').select('*');
-        if (dbWhitelist && dbWhitelist.length > 0) {
-          const list: AuthorizedUser[] = dbWhitelist.map((item) => ({
-            id: item.id || item.email,
-            nome: item.nome || item.email,
-            email: item.email,
-            cargo: item.cargo || 'agente',
-            regiao: item.regiao_atuacao || 'Polo Norte',
+        if (!list.some((u) => u.email.toLowerCase() === 'bolaojpa@gmail.com')) {
+          list.unshift({
+            id: 'usr-1',
+            nome: 'Administrador Geral (Coordenação)',
+            email: 'bolaojpa@gmail.com',
+            cargo: 'coordenacao_geral',
+            regiao: 'Todas as Jurisdições',
             status: 'ativo',
-          }));
-
-          if (!list.some((u) => u.email.toLowerCase() === 'bolaojpa@gmail.com')) {
-            list.unshift({
-              id: 'usr-1',
-              nome: 'Administrador Geral',
-              email: 'bolaojpa@gmail.com',
-              cargo: 'coordenacao_geral',
-              regiao: 'Todas as Jurisdições',
-              status: 'ativo',
-            });
-          }
-          setUsuariosDemo(list);
+          });
         }
-      } catch (err) {
-        console.warn('Erro ao carregar lista de whitelist:', err);
+        setUsuariosList(list);
       }
+    } catch (err) {
+      console.warn('Erro ao carregar lista de whitelist:', err);
+    }
+  };
 
-      setIsAuthenticated(true);
-      setIsAuthLoading(false);
-    };
-
-    checkAuthAndFetchWhitelist();
-  }, []);
-
-  if (isAuthLoading || !isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!loading) {
+      fetchWhitelist();
+    }
+  }, [loading]);
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,10 +92,8 @@ export default function UsuariosPage() {
       status: 'ativo',
     };
 
-    // Atualiza imediatamente na tela
-    setUsuariosDemo((prev) => [newUser, ...prev.filter(u => u.email !== emailClean)]);
+    setUsuariosList((prev) => [newUser, ...prev.filter((u) => u.email !== emailClean)]);
 
-    // Insere no banco Supabase
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
@@ -177,21 +108,21 @@ export default function UsuariosPage() {
       );
 
       if (error) {
-        setFeedback(`⚠️ Atenção: ${error.message}. Certifique-se de executar o SQL da whitelist no Supabase.`);
+        setFeedback(`⚠️ Atenção: ${error.message}.`);
       } else {
-        setFeedback(`✅ E-mail ${emailClean} cadastrado e salvo no banco de dados com sucesso!`);
+        setFeedback(`✅ E-mail ${emailClean} cadastrado na Whitelist com sucesso!`);
       }
     } catch (err: any) {
-      setFeedback(`⚠️ Erro ao salvar no banco: ${err.message || 'Verifique as tabelas do Supabase.'}`);
+      setFeedback(`⚠️ Erro ao salvar no banco: ${err.message || 'Falha de gravação.'}`);
     }
 
     setNomeInput('');
     setEmailInput('');
-    setTimeout(() => setFeedback(null), 6000);
+    setTimeout(() => setFeedback(null), 5000);
   };
 
   const handleRemoveUser = async (id: string, email: string) => {
-    setUsuariosDemo((prev) => prev.filter((u) => u.id !== id));
+    setUsuariosList((prev) => prev.filter((u) => u.id !== id));
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
@@ -209,19 +140,22 @@ export default function UsuariosPage() {
     coordenacao_geral: 'Coordenação Geral (Admin)',
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header
-        currentCargo={cargo}
-        onCargoChange={setCargo}
-        currentRegiao={regiao}
-        onRegiaoChange={setRegiao}
-      />
+      <Header />
       <Nav />
 
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Banner de Gestão de Acessos */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        {/* Banner CRM de Gestão de Acessos */}
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <Shield className="w-6 h-6 text-brand-600" />
@@ -230,7 +164,7 @@ export default function UsuariosPage() {
               </h1>
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              Controle de acesso restrito: Apenas e-mails autorizados nesta lista conseguem realizar login via Google.
+              Controle de acesso restrito: Apenas servidores pré-autorizados nesta lista conseguem autenticar via Google.
             </p>
           </div>
 
@@ -330,10 +264,10 @@ export default function UsuariosPage() {
           </form>
         </div>
 
-        {/* Tabela de Usuários Autorizados */}
+        {/* Tabela CRM de Usuários Autorizados */}
         <div className="card-institutional p-5 bg-white">
           <h2 className="text-base font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-            Lista de E-mails Autorizados no Sistema ({usuariosDemo.length})
+            Lista de E-mails Autorizados no Sistema ({usuariosList.length})
           </h2>
 
           <div className="overflow-x-auto">
@@ -349,7 +283,7 @@ export default function UsuariosPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 font-medium">
-                {usuariosDemo.map((user) => (
+                {usuariosList.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="p-3 font-semibold text-gray-900">{user.nome}</td>
                     <td className="p-3 text-gray-700 font-mono flex items-center gap-1.5">

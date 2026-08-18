@@ -11,6 +11,8 @@ export const viewport: Viewport = {
   themeColor: '#dc2626',
 };
 
+import { AuthProvider } from '@/context/AuthContext';
+
 export default function RootLayout({
   children,
 }: {
@@ -24,7 +26,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="h-full flex flex-col antialiased text-gray-900 bg-gray-50">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `

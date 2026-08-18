@@ -36,29 +36,35 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/auth');
+  const pathname = request.nextUrl.pathname;
+  const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth');
 
-  // 1. Redireciona QUALQUER usuário não autenticado para a tela de login
+  // 1. Redireciona usuários não autenticados para a tela de login
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // 2. Validação da Whitelist Estrita para Usuários Autenticados
+  // 2. Validação de Autorização & RBAC Estrito por Rota
   if (user) {
     const userEmail = user.email?.toLowerCase() || '';
+    let userCargo = 'agente';
 
-    if (userEmail !== 'bolaojpa@gmail.com') {
-      // 1. Checa se o perfil existe em profiles
+    if (userEmail === 'bolaojpa@gmail.com') {
+      userCargo = 'coordenacao_geral';
+    } else {
+      // Busca perfil em profiles
       const { data: profile } = await supabase
         .from('profiles')
         .select('id, cargo')
         .eq('id', user.id)
         .single();
 
-      if (!profile) {
-        // 2. Fallback: Checa se o e-mail consta na tabela whitelist_emails
+      if (profile) {
+        userCargo = profile.cargo || 'agente';
+      } else {
+        // Fallback para whitelist_emails
         const { data: whitelist } = await supabase
           .from('whitelist_emails')
           .select('email, cargo, regiao_atuacao, nome')
@@ -66,16 +72,17 @@ export async function middleware(request: NextRequest) {
           .single();
 
         if (whitelist) {
-          // Cria/Sincroniza automaticamente o perfil do servidor no banco
+          userCargo = whitelist.cargo || 'agente';
+          // Sincroniza o perfil do servidor no banco
           await supabase.from('profiles').upsert({
             id: user.id,
             email: user.email,
             nome: whitelist.nome || user.email,
-            cargo: whitelist.cargo || 'agente',
+            cargo: userCargo,
             regiao_atuacao: whitelist.regiao_atuacao || 'Polo Norte',
           });
         } else {
-          // Se não estiver em nenhuma das duas listas, desloga e manda para a tela de login
+          // Desloga e manda para o login se não estiver na whitelist
           await supabase.auth.signOut();
           const url = request.nextUrl.clone();
           url.pathname = '/login';
@@ -85,11 +92,34 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Se usuário autenticado e autorizado tentar ir para a tela de login, manda para a home
+    // Se já estiver logado e autorizado, não deixa ficar na tela de login
     if (isAuthRoute) {
       const url = request.nextUrl.clone();
       url.pathname = '/';
       return NextResponse.redirect(url);
+    }
+
+    // RBAC: Restrições Estritas de Rota por Cargo
+    // /usuarios -> Apenas coordenacao_geral e coordenador_dados
+    if (pathname.startsWith('/usuarios')) {
+      const allowedRoles = ['coordenacao_geral', 'coordenador_dados'];
+      if (!allowedRoles.includes(userCargo)) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/';
+        url.searchParams.set('error', 'forbidden');
+        return NextResponse.redirect(url);
+      }
+    }
+
+    // /dashboard e /relatorios -> Apenas gestores e coordenação
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/relatorios')) {
+      const allowedRoles = ['gerente_polo', 'coordenacao_area', 'coordenador_dados', 'coordenacao_geral'];
+      if (!allowedRoles.includes(userCargo)) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/';
+        url.searchParams.set('error', 'forbidden');
+        return NextResponse.redirect(url);
+      }
     }
   }
 

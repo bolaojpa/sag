@@ -4,41 +4,11 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ClipboardList, AlertTriangle, LayoutDashboard, FileText, UserCheck } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export const Nav: React.FC = () => {
   const pathname = usePathname();
-  const [userCargo, setUserCargo] = React.useState<CargoType>('agente');
-
-  React.useEffect(() => {
-    const fetchUserCargo = async () => {
-      try {
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (user) {
-          if (user.email?.toLowerCase() === 'bolaojpa@gmail.com') {
-            setUserCargo('coordenacao_geral');
-            return;
-          }
-
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('cargo')
-            .eq('id', user.id)
-            .single();
-
-          if (profile?.cargo) {
-            setUserCargo(profile.cargo as CargoType);
-          }
-        }
-      } catch (err) {
-        console.warn('Erro ao carregar perfil no Nav:', err);
-      }
-    };
-
-    fetchUserCargo();
-  }, []);
+  const { cargo } = useAuth();
 
   const allNavItems = [
     {
@@ -78,7 +48,7 @@ export const Nav: React.FC = () => {
     },
   ];
 
-  const visibleNavItems = allNavItems.filter((item) => item.roles.includes(userCargo));
+  const visibleNavItems = allNavItems.filter((item) => item.roles.includes(cargo));
 
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-16 z-30">
@@ -91,10 +61,10 @@ export const Nav: React.FC = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex items-center gap-2 py-3 px-3 border-b-2 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                className={`inline-flex items-center gap-2 py-3 px-3.5 border-b-2 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
                   isActive
-                    ? 'border-brand-600 text-brand-700 bg-brand-50/50'
-                    : 'border-transparent text-gray-600 hover:text-brand-600 hover:border-gray-300'
+                    ? 'border-brand-600 text-brand-700 bg-brand-50/60 font-bold'
+                    : 'border-transparent text-gray-600 hover:text-brand-600 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-brand-600' : 'text-gray-400'}`} />

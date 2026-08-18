@@ -5,67 +5,19 @@ import { Header } from '@/components/layout/Header';
 import { Nav } from '@/components/layout/Nav';
 import { MetricsCards } from '@/components/dashboard/MetricsCards';
 import { RegionalHeatmap } from '@/components/dashboard/RegionalHeatmap';
-import { CargoType } from '@/types/database';
 import { LayoutDashboard, ShieldCheck, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function DashboardPage() {
-  const [cargo, setCargo] = useState<CargoType>('coordenacao_geral');
-  const [regiao, setRegiao] = useState<string>('Polo Norte');
+  const { cargo, regiao, loading } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
 
-  React.useEffect(() => {
-    const checkAuth = async () => {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        window.location.href = '/login';
-        return;
-      }
-
-      const userEmail = user.email?.toLowerCase() || '';
-
-      if (userEmail !== 'bolaojpa@gmail.com') {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, cargo')
-          .eq('id', user.id)
-          .single();
-
-        if (!profile) {
-          const { data: whitelist } = await supabase
-            .from('whitelist_emails')
-            .select('email, cargo, regiao_atuacao, nome')
-            .ilike('email', userEmail)
-            .single();
-
-          if (whitelist) {
-            await supabase.from('profiles').upsert({
-              id: user.id,
-              email: user.email,
-              nome: whitelist.nome || user.email,
-              cargo: whitelist.cargo || 'agente',
-              regiao_atuacao: whitelist.regiao_atuacao || 'Polo Norte',
-            });
-          } else {
-            await supabase.auth.signOut();
-            window.location.href = '/login?error=unauthorized';
-            return;
-          }
-        }
-      }
-
-      setIsAuthenticated(true);
-      setIsAuthLoading(false);
-    };
-    checkAuth();
-  }, []);
-
-  if (isAuthLoading || !isAuthenticated) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
@@ -73,40 +25,30 @@ export default function DashboardPage() {
     );
   }
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 800);
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header
-        currentCargo={cargo}
-        onCargoChange={setCargo}
-        currentRegiao={regiao}
-        onRegiaoChange={setRegiao}
-      />
+      <Header />
       <Nav />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Banner Gerencial */}
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        {/* Banner Gerencial CRM */}
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <LayoutDashboard className="w-6 h-6 text-brand-600" />
               <h1 className="text-xl font-extrabold text-gray-900">
-                Painel Analítico de Gestão Governamental
+                Painel Analítico de Gestão (Iniciativa Futuro)
               </h1>
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              Visão consolidada em tempo real para tomada de decisão estratégica
+              Visão consolidada em tempo real para acompanhamento estratégico e suporte às escolas.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="bg-emerald-50 text-emerald-800 text-xs px-3 py-1.5 rounded-lg border border-emerald-200 font-semibold flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>RLS Ativo ({cargo})</span>
+              <span>RLS Ativo ({cargo.toUpperCase()})</span>
             </div>
 
             <button
@@ -120,7 +62,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Módulo 1: Metrics Cards em Tempo Real */}
+        {/* Módulo 1: Metrics Cards CRM em Tempo Real */}
         <MetricsCards
           totalVisitas={73}
           totalAlunosImpactados={512}
@@ -132,7 +74,7 @@ export default function DashboardPage() {
         {/* Módulo 2: Mapa de Calor por Polo */}
         <RegionalHeatmap userCargo={cargo} userRegiao={regiao} />
 
-        {/* Módulo 3: Tabela Sintética de Indicadores */}
+        {/* Módulo 3: Tabela Sintética de Indicadores CRM */}
         <div className="card-institutional p-5 bg-white">
           <h2 className="text-base font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
             Resumo Operacional de Escolas Atendidas

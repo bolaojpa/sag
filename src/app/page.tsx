@@ -6,20 +6,16 @@ import { Nav } from '@/components/layout/Nav';
 import { CheckInButton } from '@/components/checkin/CheckInButton';
 import { AcaoForm } from '@/components/acoes/AcaoForm';
 import { IntercorrenciaForm } from '@/components/intercorrencias/IntercorrenciaForm';
-import { CargoType, Escola } from '@/types/database';
+import { Escola } from '@/types/database';
 import { initOfflineSyncListener } from '@/lib/offline/sync';
-import { Sparkles, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function HubOperacionalPage() {
-  const [cargo, setCargo] = useState<CargoType>('agente');
-  const [regiao, setRegiao] = useState<string>('Polo Norte');
+  const { user, profile, cargo, regiao, loading } = useAuth();
   const [selectedEscolaId, setSelectedEscolaId] = useState<string>('e1');
   const [activeTab, setActiveTab] = useState<'acoes' | 'intercorrencia'>('acoes');
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
-
-  // Estados de proteção contra Flash de Conteúdo
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const escolasDemo: Escola[] = [
     { id: 'e1', nome: 'EMEF Anísio Teixeira', regiao: 'Polo Norte', lat_lng_oficial: '-3.7319,-38.5267', created_at: '', updated_at: '' },
@@ -30,53 +26,6 @@ export default function HubOperacionalPage() {
   ];
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        window.location.href = '/login';
-        return;
-      }
-
-      const userEmail = user.email?.toLowerCase() || '';
-
-      if (userEmail !== 'bolaojpa@gmail.com') {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, cargo')
-          .eq('id', user.id)
-          .single();
-
-        if (!profile) {
-          const { data: whitelist } = await supabase
-            .from('whitelist_emails')
-            .select('email, cargo, regiao_atuacao, nome')
-            .ilike('email', userEmail)
-            .single();
-
-          if (whitelist) {
-            await supabase.from('profiles').upsert({
-              id: user.id,
-              email: user.email,
-              nome: whitelist.nome || user.email,
-              cargo: whitelist.cargo || 'agente',
-              regiao_atuacao: whitelist.regiao_atuacao || 'Polo Norte',
-            });
-          } else {
-            await supabase.auth.signOut();
-            window.location.href = '/login?error=unauthorized';
-            return;
-          }
-        }
-      }
-
-      setIsAuthenticated(true);
-      setIsAuthLoading(false);
-    };
-    checkAuth();
-
     const unsubscribe = initOfflineSyncListener((count) => {
       setSyncNotice(`${count} registro(s) salvos offline foram sincronizados com sucesso!`);
       setTimeout(() => setSyncNotice(null), 5000);
@@ -87,7 +36,7 @@ export default function HubOperacionalPage() {
     };
   }, []);
 
-  if (isAuthLoading || !isAuthenticated) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
@@ -97,12 +46,7 @@ export default function HubOperacionalPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header
-        currentCargo={cargo}
-        onCargoChange={setCargo}
-        currentRegiao={regiao}
-        onRegiaoChange={setRegiao}
-      />
+      <Header />
       <Nav />
 
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-6">
@@ -116,22 +60,64 @@ export default function HubOperacionalPage() {
           </div>
         )}
 
-        {/* Card do Perfil Ativo */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+        {/* Header da Jornada CRM de Campo */}
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-xs uppercase font-bold tracking-wider text-brand-600">
-              Modo de Operação de Campo (Mobile First)
-            </span>
-            <h2 className="text-lg font-extrabold text-gray-900">
-              Agente Educacional de Campo
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] uppercase font-extrabold tracking-wider bg-brand-50 text-brand-700 px-2.5 py-0.5 rounded-full border border-brand-200">
+                Programa Iniciativa Futuro
+              </span>
+              <span className="text-[11px] uppercase font-bold text-gray-500">
+                Hub Operacional CRM
+              </span>
+            </div>
+            <h2 className="text-xl font-extrabold text-gray-900 mt-1">
+              {profile?.nome || 'Servidor Educacional'}
             </h2>
-            <p className="text-xs text-gray-500">
-              Região de Atuação: <span className="font-semibold text-gray-800">{regiao}</span>
+            <p className="text-xs text-gray-600">
+              Cargo: <span className="font-semibold text-gray-800 uppercase">{cargo.replace('_', ' ')}</span> | Região:{' '}
+              <span className="font-semibold text-gray-800">{regiao}</span>
             </p>
           </div>
-          <div className="bg-brand-50 p-2.5 rounded-xl text-brand-700 font-bold text-xs flex items-center gap-1 border border-brand-200">
-            <Sparkles className="w-4 h-4 text-brand-600" />
-            <span>PWA Ativo</span>
+          <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+            <Sparkles className="w-5 h-5 text-brand-600" />
+            <div className="text-left text-xs">
+              <p className="font-bold text-gray-900">PWA Contingência Offline</p>
+              <p className="text-[11px] text-gray-500">Modo de Coleta Rápida (&lt; 3 min)</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Resumo Métrico da Jornada do Agente */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div className="p-2.5 bg-brand-50 text-brand-600 rounded-lg shrink-0">
+              <Activity className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 uppercase">Check-ins Hoje</p>
+              <p className="text-lg font-bold text-gray-900">1 Escola</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 uppercase">Alunos Impactados</p>
+              <p className="text-lg font-bold text-gray-900">Atendimento Ativo</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg shrink-0">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 uppercase">Intercorrências</p>
+              <p className="text-lg font-bold text-gray-900">Semáforo Ativo</p>
+            </div>
           </div>
         </div>
 
@@ -153,13 +139,13 @@ export default function HubOperacionalPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              + Ação Diária (Impacto de Alunos)
+              + Registro de Ação Diária
             </button>
             <button
               onClick={() => setActiveTab('intercorrencia')}
               className={`flex-1 py-3 text-xs sm:text-sm font-bold rounded-lg transition-all ${
                 activeTab === 'intercorrencia'
-                  ? 'bg-red-600 text-white shadow-sm'
+                  ? 'bg-brand-600 text-white shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -168,9 +154,9 @@ export default function HubOperacionalPage() {
           </div>
 
           {activeTab === 'acoes' ? (
-            <AcaoForm escolaId={selectedEscolaId} agenteId="agente_demo_123" />
+            <AcaoForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
           ) : (
-            <IntercorrenciaForm escolaId={selectedEscolaId} agenteId="agente_demo_123" />
+            <IntercorrenciaForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
           )}
         </div>
       </main>
