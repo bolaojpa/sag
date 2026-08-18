@@ -37,12 +37,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const supabase = createClient();
 
       const { data: { user: currentUser } } = await supabase.auth.getUser();
-      setUser(currentUser);
 
       if (currentUser) {
         const userEmail = currentUser.email?.toLowerCase() || '';
 
+        // E-mail Admin Master Supremo
         if (userEmail === 'bolaojpa@gmail.com') {
+          setUser(currentUser);
           setCargo('coordenacao_geral');
           setRegiao('Polo Norte');
           setProfile({
@@ -51,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             nome: 'Administrador Geral (Coordenação)',
             cargo: 'coordenacao_geral',
             regiao_atuacao: 'Polo Norte',
+            grupo_id: 'Grupo 01',
             last_seen: new Date().toISOString(),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -67,11 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         if (userProfile) {
+          setUser(currentUser);
           setProfile(userProfile);
           setCargo((userProfile.cargo as CargoType) || 'agente');
           setRegiao(userProfile.regiao_atuacao || 'Polo Norte');
         } else {
-          // Fallback whitelist check
+          // Busca autorização prévia na whitelist_emails
           const { data: whitelist } = await supabase
             .from('whitelist_emails')
             .select('*')
@@ -79,12 +82,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
 
           if (whitelist) {
+            setUser(currentUser);
             const newProfileData = {
               id: currentUser.id,
               email: currentUser.email || userEmail,
               nome: whitelist.nome || currentUser.email || 'Servidor',
               cargo: (whitelist.cargo as CargoType) || 'agente',
               regiao_atuacao: whitelist.regiao_atuacao || 'Polo Norte',
+              grupo_id: whitelist.grupo_id || 'Grupo 01',
             };
 
             await supabase.from('profiles').upsert(newProfileData);
@@ -97,8 +102,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             });
+          } else {
+            // E-MAIL NÃO AUTORIZADO! REJEIÇÃO E DESLOGUE IMEDIATO!
+            console.warn(`[SAG Auth] E-mail não autorizado tentou acessar: ${userEmail}`);
+            await supabase.auth.signOut();
+            setUser(null);
+            setProfile(null);
+            setCargo('agente');
+            if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+              window.location.href = '/login?error=unauthorized';
+            }
           }
         }
+      } else {
+        setUser(null);
+        setProfile(null);
       }
     } catch (err) {
       console.warn('Erro ao inicializar AuthContext:', err);

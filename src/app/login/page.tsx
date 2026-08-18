@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { School, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { School, Lock, AlertCircle, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 
 function LoginContent() {
   const [loading, setLoading] = useState(false);
@@ -14,7 +14,7 @@ function LoginContent() {
     const errorType = searchParams.get('error');
     if (errorType === 'unauthorized') {
       setErrorMsg(
-        '🛑 Acesso Negado: Seu e-mail não possui autorização prévia da Coordenação Geral. Este sistema é exclusivo para servidores pré-cadastrados.'
+        '🛑 Acesso Negado: Seu e-mail não foi pré-autorizado pela Coordenação Geral do SAG. Solicite ao Administrador o seu cadastro na Whitelist antes de tentar acessar.'
       );
     } else if (errorType === 'auth_failed') {
       setErrorMsg('Falha no processo de autenticação com o Google. Tente novamente.');
@@ -46,47 +46,60 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 antialiased">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 antialiased">
       {/* Cabeçalho Institucional */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center bg-brand-700 text-white p-3.5 rounded-2xl shadow-lg mb-3">
-          <School className="w-10 h-10" />
+        <div className="inline-flex items-center justify-center bg-gradient-to-tr from-red-800 via-red-600 to-rose-600 text-white p-4 rounded-2xl shadow-lg mb-4 shadow-red-600/20 transform hover:scale-105 transition-transform">
+          <School className="w-10 h-10 text-white" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-          SAG
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-2">
+          <span>SAG</span>
+          <span className="text-xs bg-red-50 text-red-700 px-2.5 py-0.5 rounded-full border border-red-200 uppercase font-extrabold flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-red-600" />
+            v2.0 CRM
+          </span>
         </h1>
-        <p className="mt-1 text-sm font-semibold text-brand-700 uppercase tracking-wider">
+        <p className="mt-1 text-xs font-black text-red-700 uppercase tracking-widest">
           Sistema de Acompanhamento de Gestão
         </p>
-        <p className="mt-1 text-xs text-gray-500">
-          Portal Oficial de Acesso Restrito a Servidores Autorizados
+        <p className="mt-1 text-xs text-slate-500 font-semibold">
+          Portal Oficial • Programa Iniciativa Futuro
         </p>
       </div>
 
       {/* Card Principal de Login */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
-        <div className="bg-white py-8 px-6 shadow-xl rounded-2xl border border-gray-200 sm:px-10 space-y-6">
+        <div className="bg-white py-8 px-6 shadow-xl rounded-2xl border border-slate-200/90 sm:px-10 space-y-6">
           {errorMsg && (
-            <div className="bg-red-50 text-red-800 p-4 rounded-xl border-2 border-red-300 text-xs flex items-start gap-3 shadow-sm animate-pulse">
+            <div className="bg-rose-50 text-rose-950 p-4 rounded-2xl border-2 border-rose-300 text-xs flex items-start gap-3 shadow-sm animate-pulse">
               <AlertCircle className="w-5 h-5 shrink-0 text-red-600 mt-0.5" />
-              <div className="font-semibold leading-relaxed">{errorMsg}</div>
+              <div className="font-bold leading-relaxed">{errorMsg}</div>
             </div>
           )}
+
+          {/* Banner de Aviso Whitelist */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs text-slate-600 font-medium leading-relaxed flex items-start gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-extrabold text-slate-900 block mb-0.5">Acesso Restrito por Whitelist:</span>
+              Apenas servidores cujos e-mails e cargos forem previamente autorizados pelo Administrador conseguirão realizar o login.
+            </div>
+          </div>
 
           {/* Botão Oficial Google OAuth */}
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full btn-primary py-3.5 px-4 text-sm flex items-center justify-center gap-3 shadow-md hover:shadow-lg active:scale-[0.99] transition-all bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl"
+            className="w-full btn-primary py-4 px-4 text-sm font-extrabold flex items-center justify-center gap-3 shadow-lg shadow-red-600/20 active:scale-[0.99] transition-all"
           >
             {loading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Redirecionando para o Google...</span>
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
+                <span>Conectando com o Google...</span>
               </>
             ) : (
               <>
-                <svg className="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 bg-white rounded-full p-0.5 shadow-sm" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -109,15 +122,15 @@ function LoginContent() {
             )}
           </button>
 
-          <div className="pt-4 border-t border-gray-100 text-center">
-            <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500 font-medium">
-              <Lock className="w-3.5 h-3.5 text-gray-400" />
-              <span>Conexão Protegida com Controle de Whitelist</span>
+          <div className="pt-4 border-t border-slate-100 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 font-semibold">
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+              <span>Autenticação OAuth2 + Validação de Whitelist Supabase</span>
             </div>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-gray-500">
+        <p className="mt-6 text-center text-xs text-slate-500 font-medium">
           &copy; {new Date().getFullYear()} SAG - Sistema de Acompanhamento de Gestão. Todos os direitos reservados.
         </p>
       </div>
@@ -128,8 +141,8 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-brand-600 animate-spin" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
       </div>
     }>
       <LoginContent />
