@@ -50,6 +50,22 @@ export default function UsuariosPage() {
   const [escolaLat, setEscolaLat] = useState<number>(-7.1153);
   const [escolaLng, setEscolaLng] = useState<number>(-34.8610);
   const [escolaFeedback, setEscolaFeedback] = useState<string | null>(null);
+  const [filterPolo, setFilterPolo] = useState<string>('Todos os Polos');
+
+  const handleUpdateEscolaGrupo = async (id: string, newGrupo: string) => {
+    setEscolasList((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, grupo_id: newGrupo } : e))
+    );
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      await supabase.from('escolas').update({ grupo_id: newGrupo }).eq('id', id);
+      setEscolaFeedback(`✅ Escola delegada para o "${newGrupo}" com sucesso!`);
+      setTimeout(() => setEscolaFeedback(null), 4000);
+    } catch (err) {
+      console.warn('Erro ao atualizar grupo da escola:', err);
+    }
+  };
 
   const [usuariosList, setUsuariosList] = useState<AuthorizedUser[]>([
     {
@@ -583,71 +599,104 @@ export default function UsuariosPage() {
               </form>
             </div>
 
-            {/* Tabela de Escolas Cadastradas com Coordenadas e Grupo */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
-              <h2 className="text-base font-extrabold text-slate-900 mb-4 pb-2 border-b border-slate-200">
-                Rede de Escolas Cadastradas no Banco ({escolasList.length})
-              </h2>
+            {/* Tabela de Escolas Cadastradas com Coordenadas e Filtro por Polo */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-200">
+                <div>
+                  <h2 className="text-base font-extrabold text-slate-900">
+                    Rede de Escolas Cadastradas & Delegação aos Agentes
+                  </h2>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Filtre por Polo Regional e atribua os Grupos de Agentes de Campo
+                  </p>
+                </div>
+
+                {/* Dropdown de Filtro de Polos */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-700 whitespace-nowrap">
+                    Filtrar por Polo:
+                  </label>
+                  <select
+                    value={filterPolo}
+                    onChange={(e) => setFilterPolo(e.target.value)}
+                    className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-red-500 shadow-sm"
+                  >
+                    <option value="Todos os Polos">Todos os Polos ({escolasList.length})</option>
+                    <option value="Polo Norte">Polo Norte ({escolasList.filter((e) => e.regiao === 'Polo Norte').length})</option>
+                    <option value="Polo Sul">Polo Sul ({escolasList.filter((e) => e.regiao === 'Polo Sul').length})</option>
+                    <option value="Polo Leste">Polo Leste ({escolasList.filter((e) => e.regiao === 'Polo Leste').length})</option>
+                    <option value="Polo Oeste">Polo Oeste ({escolasList.filter((e) => e.regiao === 'Polo Oeste').length})</option>
+                  </select>
+                </div>
+              </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-300">
-                      <th className="p-3">Unidade Escolar</th>
-                      <th className="p-3">Polo/Região</th>
-                      <th className="p-3">Grupo Delegado</th>
-                      <th className="p-3">Latitude / Longitude</th>
+                      <th className="p-3">Unidade Escolar & Endereço (Pino Reverso)</th>
+                      <th className="p-3">Polo / Regional</th>
+                      <th className="p-3">Grupo Responsável (Atribuição ADMIN)</th>
+                      <th className="p-3">Coordenadas Pino Leaflet</th>
                       <th className="p-3 text-center">Status</th>
                       <th className="p-3 text-center">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 font-medium">
-                    {escolasList.map((escola) => (
-                      <tr key={escola.id} className="hover:bg-slate-50/80">
-                        <td className="p-3 font-extrabold text-slate-900">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-red-600" />
-                            <span>{escola.nome}</span>
-                          </div>
-                          {escola.endereco && (
-                            <p className="text-[11px] text-slate-500 font-medium ml-6">{escola.endereco}</p>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <span className="bg-slate-100 text-slate-800 font-extrabold px-2.5 py-0.5 rounded-full border border-slate-200">
-                            {escola.regiao}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <span className="bg-blue-50 text-blue-800 font-extrabold px-2.5 py-0.5 rounded-full border border-blue-200">
-                            {escola.grupo_id || 'Grupo 01'}
-                          </span>
-                        </td>
-                        <td className="p-3 text-slate-600 font-mono font-bold">
-                          <div className="flex items-center gap-1 text-red-700">
-                            <MapPin className="w-3.5 h-3.5 text-red-600" />
-                            <span>
-                              {escola.latitude ? escola.latitude.toFixed(4) : '-7.1153'},{' '}
-                              {escola.longitude ? escola.longitude.toFixed(4) : '-34.8610'}
+                    {escolasList
+                      .filter((e) => filterPolo === 'Todos os Polos' || e.regiao === filterPolo)
+                      .map((escola) => (
+                        <tr key={escola.id} className="hover:bg-slate-50/80">
+                          <td className="p-3 font-extrabold text-slate-900">
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-4 h-4 text-red-600 shrink-0" />
+                              <span>{escola.nome}</span>
+                            </div>
+                            {escola.endereco && (
+                              <p className="text-[11px] text-slate-500 font-medium ml-6">{escola.endereco}</p>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <span className="bg-slate-100 text-slate-800 font-extrabold px-2.5 py-0.5 rounded-full border border-slate-200">
+                              {escola.regiao}
                             </span>
-                          </div>
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className="bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
-                            🟢 Pista Leaflet Pronta
-                          </span>
-                        </td>
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() => handleRemoveEscola(escola.id)}
-                            className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                            title="Remover Escola da Rede"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="p-3">
+                            <select
+                              value={escola.grupo_id || 'Grupo 01'}
+                              onChange={(e) => handleUpdateEscolaGrupo(escola.id, e.target.value)}
+                              className="bg-blue-50 text-blue-900 font-extrabold text-xs rounded-lg p-1.5 border border-blue-300 focus:ring-2 focus:ring-blue-500 shadow-sm"
+                            >
+                              <option value="Grupo 01">Grupo 01</option>
+                              <option value="Grupo 02">Grupo 02</option>
+                              <option value="Grupo 03">Grupo 03</option>
+                            </select>
+                          </td>
+                          <td className="p-3 text-slate-600 font-mono font-bold">
+                            <div className="flex items-center gap-1 text-red-700">
+                              <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                              <span>
+                                {escola.latitude ? escola.latitude.toFixed(4) : '-7.1153'},{' '}
+                                {escola.longitude ? escola.longitude.toFixed(4) : '-34.8610'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
+                              🟢 Pista Leaflet Pronta
+                            </span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <button
+                              onClick={() => handleRemoveEscola(escola.id)}
+                              className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                              title="Remover Escola da Rede"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>

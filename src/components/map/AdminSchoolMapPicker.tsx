@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Search, Loader2, Compass, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { MapPin, Search, Loader2, Compass, AlertCircle, CheckCircle2, Navigation } from 'lucide-react';
 
 interface AdminSchoolMapPickerProps {
   initialLat?: number;
@@ -25,6 +25,41 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
   const [endereco, setEndereco] = useState<string>(initialEndereco);
   const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
   const [geocodeFeedback, setGeocodeFeedback] = useState<string | null>(null);
+
+  // Geocodificação Reversa Nominatim (Lat/Lng -> Endereço Texto)
+  const fetchReverseGeocode = async (targetLat: number, targetLng: number) => {
+    setIsGeocoding(true);
+    setGeocodeFeedback(null);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${targetLat}&lon=${targetLng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'Accept-Language': 'pt-BR,pt;q=0.9',
+            'User-Agent': 'SAG-IniciativaFuturo-App/2.0',
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data && data.display_name) {
+        const formattedAddress = data.display_name;
+        setEndereco(formattedAddress);
+        onCoordinatesChange({ lat: targetLat, lng: targetLng, endereco: formattedAddress });
+        setGeocodeFeedback(`✅ Geocodificação Reversa: Endereço capturado pela posição do pino no mapa!`);
+      } else {
+        onCoordinatesChange({ lat: targetLat, lng: targetLng });
+        setGeocodeFeedback(`📍 Coordenadas atualizadas pelo pino: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
+      }
+    } catch (err) {
+      console.warn('Erro na Geocodificação Reversa:', err);
+      onCoordinatesChange({ lat: targetLat, lng: targetLng });
+      setGeocodeFeedback(`📍 Coordenadas atualizadas pelo pino: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
 
   // Inicialização do Leaflet no lado do cliente
   useEffect(() => {
@@ -53,22 +88,24 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
         const customMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
 
+        // Arrasto do pino -> Geocodificação Reversa
         customMarker.on('dragend', (e: any) => {
           const position = e.target.getLatLng();
           if (isMounted) {
             setLat(position.lat);
             setLng(position.lng);
-            onCoordinatesChange({ lat: position.lat, lng: position.lng });
+            fetchReverseGeocode(position.lat, position.lng);
           }
         });
 
+        // Clique no mapa -> Move pino + Geocodificação Reversa
         map.on('click', (e: any) => {
           const { lat: newLat, lng: newLng } = e.latlng;
           if (isMounted) {
             setLat(newLat);
             setLng(newLng);
             customMarker.setLatLng([newLat, newLng]);
-            onCoordinatesChange({ lat: newLat, lng: newLng });
+            fetchReverseGeocode(newLat, newLng);
           }
         });
 
@@ -88,7 +125,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
     };
   }, []);
 
-  // Geocodificação Gratuita com a API do Nominatim (OpenStreetMap)
+  // Geocodificação Direta com a API do Nominatim (Texto -> Lat/Lng)
   const handleGeocodeSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!endereco.trim()) return;
@@ -97,7 +134,6 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
     setGeocodeFeedback(null);
 
     try {
-      // Adiciona João Pessoa, PB se não informado para maior precisão
       const searchQuery = endereco.toLowerCase().includes('joão pessoa')
         ? endereco
         : `${endereco}, João Pessoa, Paraíba, Brasil`;
@@ -132,13 +168,13 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
         setGeocodeFeedback(`✅ Coordenadas capturadas via Nominatim: ${foundLat.toFixed(4)}, ${foundLng.toFixed(4)}`);
       } else {
         setGeocodeFeedback(
-          '⚠️ Endereço não encontrado na busca automática. Clique diretamente no mapa abaixo para selecionar a localização exata!'
+          '⚠️ Endereço não encontrado na busca por texto. Clique no pino do mapa para a Geocodificação Reversa!'
         );
       }
     } catch (err: any) {
       console.warn('Erro ao consultar API Nominatim:', err);
       setGeocodeFeedback(
-        '⚠️ Falha na busca automática do Nominatim. Você pode clicar no mapa para definir as coordenadas manualmente.'
+        '⚠️ Falha na busca por texto. Você pode clicar no mapa para capturar o endereço do pino automaticamente.'
       );
     } finally {
       setIsGeocoding(false);
@@ -150,10 +186,11 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-800 uppercase tracking-wider">
           <Compass className="w-4 h-4 text-red-600" />
-          <span>Geocodificação Automática (Nominatim OpenStreetMap)</span>
+          <span>Geocodificação Reversa & Direta (Nominatim OpenStreetMap)</span>
         </div>
-        <span className="text-[11px] bg-red-50 text-red-700 font-extrabold px-2.5 py-0.5 rounded-full border border-red-200">
-          100% Gratuito
+        <span className="text-[11px] bg-red-50 text-red-700 font-extrabold px-2.5 py-0.5 rounded-full border border-red-200 flex items-center gap-1">
+          <Navigation className="w-3 h-3 text-red-600" />
+          Pinagem Automática
         </span>
       </div>
 
@@ -164,8 +201,8 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
             type="text"
             value={endereco}
             onChange={(e) => setEndereco(e.target.value)}
-            placeholder="Ex: Av. Epitácio Pessoa, 1200, Bairro dos Estados, João Pessoa"
-            className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500 shadow-inner pr-10"
+            placeholder="Digite o endereço OU clique no mapa abaixo para capturar via pino..."
+            className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500 shadow-inner"
           />
         </div>
         <button
@@ -177,12 +214,12 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
           {isGeocoding ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-white" />
-              <span>Buscando...</span>
+              <span>Processando...</span>
             </>
           ) : (
             <>
               <Search className="w-4 h-4 text-white" />
-              <span>Geocodificar Endereço</span>
+              <span>Buscar por Texto</span>
             </>
           )}
         </button>
@@ -201,27 +238,27 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
           ) : (
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
           )}
-          <span>{geocodeFeedback}</span>
+          <span className="leading-relaxed">{geocodeFeedback}</span>
         </div>
       )}
 
       {/* Exibição dos Valores Capturados */}
       <div className="grid grid-cols-2 gap-3 text-xs font-semibold bg-white p-3 rounded-xl border border-slate-200">
         <div>
-          <span className="text-slate-500 block text-[10px] uppercase font-bold">Latitude Capturada:</span>
+          <span className="text-slate-500 block text-[10px] uppercase font-bold">Latitude do Pino:</span>
           <span className="font-mono font-extrabold text-red-700">{lat.toFixed(6)}</span>
         </div>
         <div>
-          <span className="text-slate-500 block text-[10px] uppercase font-bold">Longitude Capturada:</span>
+          <span className="text-slate-500 block text-[10px] uppercase font-bold">Longitude do Pino:</span>
           <span className="font-mono font-extrabold text-red-700">{lng.toFixed(6)}</span>
         </div>
       </div>
 
       {/* Container do Mapa Interativo Leaflet */}
       <div>
-        <p className="text-[11px] text-slate-500 font-bold mb-1 flex items-center gap-1">
-          <MapPin className="w-3.5 h-3.5 text-red-600" />
-          Ou clique/arraste o pino no mapa para ajustar a localização exata:
+        <p className="text-[11px] text-slate-800 font-extrabold mb-1 flex items-center gap-1">
+          <MapPin className="w-4 h-4 text-red-600" />
+          Clique ou arraste o pino no mapa para obter o Endereço Reversível na hora:
         </p>
         <div
           ref={mapContainerRef}
