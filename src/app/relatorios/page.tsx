@@ -8,15 +8,25 @@ import { FileText, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function RelatoriosPage() {
-  const { regiao, loading } = useAuth();
+  const { user, profile, regiao, loading } = useAuth();
   const [selectedEscola, setSelectedEscola] = useState<string>('EMEF Anísio Teixeira');
+
+  React.useEffect(() => {
+    if (!loading && (!user || !profile)) {
+      window.location.href = '/login';
+    }
+  }, [loading, user, profile]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
+  }
+
+  if (!user || !profile) {
+    return null;
   }
 
   return (

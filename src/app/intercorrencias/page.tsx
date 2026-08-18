@@ -10,11 +10,17 @@ import { AlertOctagon, PlusCircle, ListFilter, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function IntercorrenciasPage() {
-  const { user, cargo, loading } = useAuth();
+  const { user, profile, cargo, loading } = useAuth();
   const [showForm, setShowForm] = useState<boolean>(false);
   const [intercorrencias, setIntercorrencias] = useState<Intercorrencia[]>([]);
   const [urgenciaFilter, setUrgenciaFilter] = useState<string>('todos');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
+
+  useEffect(() => {
+    if (!loading && (!user || !profile)) {
+      window.location.href = '/login';
+    }
+  }, [loading, user, profile]);
 
   const fetchIntercorrencias = async () => {
     try {

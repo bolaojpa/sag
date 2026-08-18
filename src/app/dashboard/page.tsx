@@ -9,8 +9,14 @@ import { LayoutDashboard, ShieldCheck, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function DashboardPage() {
-  const { cargo, regiao, loading } = useAuth();
+  const { user, profile, cargo, regiao, loading } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  React.useEffect(() => {
+    if (!loading && (!user || !profile)) {
+      window.location.href = '/login';
+    }
+  }, [loading, user, profile]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -19,10 +25,14 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
+  }
+
+  if (!user || !profile) {
+    return null;
   }
 
   return (

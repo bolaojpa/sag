@@ -66,12 +66,22 @@ export default function HubOperacionalPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!loading && (!user || !profile)) {
+      window.location.href = '/login';
+    }
+  }, [loading, user, profile]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
+  }
+
+  if (!user || !profile) {
+    return null;
   }
 
   // Filtra as escolas vinculadas ao grupo do agente (padrão Grupo 01 se não especificado)
