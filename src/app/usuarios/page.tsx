@@ -110,14 +110,31 @@ export default function UsuariosPage() {
   const saveEscolasState = (newList: Escola[]) => {
     setEscolasList(newList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sag_escolas_v4', JSON.stringify(newList));
+      localStorage.setItem('sag_escolas_v5', JSON.stringify(newList));
     }
   };
 
+  const sanitizeWhitelist = (list: AuthorizedUser[]): AuthorizedUser[] => {
+    return list.map((u) => {
+      const isAdmin =
+        u.email.toLowerCase() === 'bolaojpa@gmail.com' ||
+        u.cargo === 'coordenacao_geral' ||
+        u.cargo === 'coordenador_dados' ||
+        u.cargo === 'coordenacao_area';
+
+      return {
+        ...u,
+        cargo: u.email.toLowerCase() === 'bolaojpa@gmail.com' ? 'coordenacao_geral' : u.cargo,
+        grupo_id: isAdmin ? 'Geral (Todos os Grupos)' : u.grupo_id || 'Grupo 01',
+      };
+    });
+  };
+
   const saveWhitelistState = (newList: AuthorizedUser[]) => {
-    setUsuariosList(newList);
+    const cleanList = sanitizeWhitelist(newList);
+    setUsuariosList(cleanList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sag_whitelist_v4', JSON.stringify(newList));
+      localStorage.setItem('sag_whitelist_v5', JSON.stringify(cleanList));
     }
   };
 
@@ -164,11 +181,11 @@ export default function UsuariosPage() {
     }
   };
 
-  // Inicialização com cache local síncrono
+  // Inicialização com cache local síncrono v5
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const cachedEscolas = localStorage.getItem('sag_escolas_v3');
+    const cachedEscolas = localStorage.getItem('sag_escolas_v5');
     if (cachedEscolas) {
       try {
         setEscolasList(JSON.parse(cachedEscolas));
@@ -176,18 +193,19 @@ export default function UsuariosPage() {
         setEscolasList(DEFAULT_ESCOLAS);
       }
     } else {
-      localStorage.setItem('sag_escolas_v3', JSON.stringify(DEFAULT_ESCOLAS));
+      localStorage.setItem('sag_escolas_v5', JSON.stringify(DEFAULT_ESCOLAS));
     }
 
-    const cachedWhitelist = localStorage.getItem('sag_whitelist_v3');
+    const cachedWhitelist = localStorage.getItem('sag_whitelist_v5');
     if (cachedWhitelist) {
       try {
-        setUsuariosList(JSON.parse(cachedWhitelist));
+        const parsed = JSON.parse(cachedWhitelist);
+        setUsuariosList(sanitizeWhitelist(parsed));
       } catch (e) {
         setUsuariosList(DEFAULT_WHITELIST);
       }
     } else {
-      localStorage.setItem('sag_whitelist_v3', JSON.stringify(DEFAULT_WHITELIST));
+      localStorage.setItem('sag_whitelist_v5', JSON.stringify(DEFAULT_WHITELIST));
     }
 
     if (!loading) {
