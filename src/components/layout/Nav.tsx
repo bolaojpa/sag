@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ClipboardList, AlertTriangle, LayoutDashboard, FileText, UserCheck } from 'lucide-react';
+import { ClipboardList, AlertTriangle, LayoutDashboard, FileText, UserCheck, Building2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export const Nav: React.FC = () => {
@@ -17,6 +17,13 @@ export const Nav: React.FC = () => {
       icon: ClipboardList,
       description: 'Check-in e Rotina',
       roles: ['agente', 'gerente_polo', 'coordenacao_area', 'coordenador_dados', 'coordenacao_geral'],
+    },
+    {
+      label: 'Unidades Escolares',
+      href: '/usuarios?tab=escolas',
+      icon: Building2,
+      description: 'Cadastro & Mapeamento',
+      roles: ['coordenacao_geral', 'coordenador_dados', 'coordenacao_area', 'gerente_polo'],
     },
     {
       label: 'Intercorrências',
@@ -41,7 +48,7 @@ export const Nav: React.FC = () => {
     },
     {
       label: 'Gestão de Usuários',
-      href: '/usuarios',
+      href: '/usuarios?tab=whitelist',
       icon: UserCheck,
       description: 'Whitelist de Acesso',
       roles: ['coordenacao_geral', 'coordenador_dados'],

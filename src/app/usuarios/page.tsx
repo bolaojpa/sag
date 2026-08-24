@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Header } from '@/components/layout/Header';
 import { Nav } from '@/components/layout/Nav';
@@ -41,9 +41,21 @@ interface ModalConfig {
   action?: () => void | Promise<void>;
 }
 
-export default function UsuariosPage() {
+import { useSearchParams } from 'next/navigation';
+
+function UsuariosPageContent() {
   const { user, profile, loading } = useAuth();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'whitelist' | 'escolas' | 'escala'>('escolas');
+
+  useEffect(() => {
+    if (searchParams) {
+      const tabParam = searchParams.get('tab');
+      if (tabParam === 'escolas' || tabParam === 'whitelist' || tabParam === 'escala') {
+        setActiveTab(tabParam as any);
+      }
+    }
+  }, [searchParams]);
 
   // Modal de Confirmação Global
   const [confirmModal, setConfirmModal] = useState<ModalConfig>({
@@ -1023,5 +1035,19 @@ export default function UsuariosPage() {
         onCancel={closeConfirmModal}
       />
     </div>
+  );
+}
+
+export default function UsuariosPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      }
+    >
+      <UsuariosPageContent />
+    </Suspense>
   );
 }

@@ -39,6 +39,21 @@ export default function HubOperacionalPage() {
   ]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('sag_escolas_v6');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.length > 0) {
+            setEscolasList(parsed);
+            setSelectedEscolaId(parsed[0].id);
+          }
+        } catch (e) {
+          console.warn('Erro ao ler cache local de escolas:', e);
+        }
+      }
+    }
+
     const fetchEscolas = async () => {
       try {
         const { createClient } = await import('@/lib/supabase/client');
@@ -47,10 +62,13 @@ export default function HubOperacionalPage() {
 
         if (dbEscolas && dbEscolas.length > 0) {
           setEscolasList(dbEscolas);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('sag_escolas_v6', JSON.stringify(dbEscolas));
+          }
           setSelectedEscolaId(dbEscolas[0].id);
         }
       } catch (err) {
-        console.warn('Erro ao carregar escolas de João Pessoa:', err);
+        console.warn('Erro ao carregar escolas no Hub:', err);
       }
     };
 
@@ -84,9 +102,14 @@ export default function HubOperacionalPage() {
     return null;
   }
 
-  // Filtra as escolas vinculadas ao grupo do agente (padrão Grupo 01 se não especificado)
+  // Se for ADMIN / Coordenação, exibe TODAS as unidades da rede cadastradas pelo Admin!
+  // Se for Agente de Campo, exibe as unidades vinculadas ao seu Grupo.
+  const isAdmin = cargo === 'coordenacao_geral' || cargo === 'coordenador_dados' || cargo === 'coordenacao_area';
   const agentGrupo = profile?.grupo_id || 'Grupo 01';
-  const agentEscolas = escolasList.filter((e) => !e.grupo_id || e.grupo_id === agentGrupo);
+  
+  const displayEscolas = (isAdmin || !agentGrupo)
+    ? escolasList
+    : escolasList.filter((e) => !e.grupo_id || e.grupo_id === agentGrupo);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -167,13 +190,13 @@ export default function HubOperacionalPage() {
 
         {/* NOVO MÓDULO: Mapa do OpenStreetMap Leaflet.js para Agentes com Botão de Rota GPS */}
         <AgentSchoolMapView
-          escolas={agentEscolas.length > 0 ? agentEscolas : escolasList}
-          grupoNome={agentGrupo}
+          escolas={displayEscolas}
+          grupoNome={isAdmin ? 'Todas as Unidades da Rede (Visão Admin)' : agentGrupo}
         />
 
         {/* Módulo 1: Check-in Transparente via GPS */}
         <CheckInButton
-          escolas={agentEscolas.length > 0 ? agentEscolas : escolasList}
+          escolas={displayEscolas}
           selectedEscolaId={selectedEscolaId}
           onSelectEscola={setSelectedEscolaId}
         />
