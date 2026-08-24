@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Plus, Minus, Send, BookOpen, CheckCircle, WifiOff, Sparkles } from 'lucide-react';
 import { savePendingRegistro } from '@/lib/offline/db';
 
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+
 interface AcaoFormProps {
   escolaId: string;
   agenteId: string;
@@ -15,6 +17,7 @@ export const AcaoForm: React.FC<AcaoFormProps> = ({ escolaId, agenteId, onSucces
   const [alunosImpactados, setAlunosImpactados] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSaved, setLastSaved] = useState<{ tipo: string; alunos: number; offline: boolean } | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const atividadesPredefinidas = [
     'Acompanhamento Pedagógico',
@@ -27,8 +30,13 @@ export const AcaoForm: React.FC<AcaoFormProps> = ({ escolaId, agenteId, onSucces
   const handleIncrement = () => setAlunosImpactados((prev) => prev + 1);
   const handleDecrement = () => setAlunosImpactados((prev) => (prev > 1 ? prev - 1 : 1));
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const requestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowConfirmModal(true);
+  };
+
+  const executeSubmit = async () => {
+    setShowConfirmModal(false);
     setIsSubmitting(true);
 
     const isOnline = typeof window !== 'undefined' && navigator.onLine;
@@ -88,7 +96,7 @@ export const AcaoForm: React.FC<AcaoFormProps> = ({ escolaId, agenteId, onSucces
         </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={requestSubmit} className="space-y-5">
         {/* Seleção da Rotina Pedagógica */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
@@ -178,6 +186,17 @@ export const AcaoForm: React.FC<AcaoFormProps> = ({ escolaId, agenteId, onSucces
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação de Ação Diária */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title="Confirmar Registro de Ação"
+        message={`Deseja registrar a ação "${tipoAtividade}" com o impacto de ${alunosImpactados} ${alunosImpactados === 1 ? 'aluno atendido' : 'alunos atendidos'}?`}
+        confirmText="Confirmar e Salvar"
+        variant="primary"
+        onConfirm={executeSubmit}
+        onCancel={() => setShowConfirmModal(false)}
+      />
     </div>
   );
 };

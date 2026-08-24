@@ -11,6 +11,14 @@ interface IntercorrenciaFormProps {
   onSuccess?: () => void;
 }
 
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+
+interface IntercorrenciaFormProps {
+  escolaId: string;
+  agenteId: string;
+  onSuccess?: () => void;
+}
+
 export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
   escolaId,
   agenteId,
@@ -21,6 +29,7 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
   const [descricao, setDescricao] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ msg: string; offline: boolean } | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const categoriasOficiais: CategoriaIntercorrencia[] = [
     'Infraestrutura',
@@ -29,10 +38,14 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
     'Desafios de Aprendizagem',
   ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const requestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!descricao.trim()) return;
+    setShowConfirmModal(true);
+  };
 
+  const executeSubmit = async () => {
+    setShowConfirmModal(false);
     setIsSubmitting(true);
     const isOnline = typeof window !== 'undefined' && navigator.onLine;
 
@@ -121,7 +134,7 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
         </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={requestSubmit} className="space-y-5">
         {/* Categoria Oficial */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
@@ -228,6 +241,17 @@ export const IntercorrenciaForm: React.FC<IntercorrenciaFormProps> = ({
           <span className="font-bold">{feedback.msg}</span>
         </div>
       )}
+
+      {/* Modal de Confirmação de Intercorrência */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title="Confirmar Envio da Intercorrência"
+        message={`Deseja registrar o alerta de intercorrência na categoria "${categoria}" com nível de urgência "${urgencia.toUpperCase()}"?`}
+        confirmText="Confirmar Envio"
+        variant={urgencia === 'alta' ? 'danger' : 'warning'}
+        onConfirm={executeSubmit}
+        onCancel={() => setShowConfirmModal(false)}
+      />
     </div>
   );
 };

@@ -30,9 +30,38 @@ interface AuthorizedUser {
   status: 'ativo' | 'convidado';
 }
 
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+
+interface ModalConfig {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  variant?: 'danger' | 'warning' | 'primary';
+  action?: () => void | Promise<void>;
+}
+
 export default function UsuariosPage() {
   const { user, profile, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'whitelist' | 'escolas' | 'escala'>('escolas');
+
+  // Modal de Confirmação Global
+  const [confirmModal, setConfirmModal] = useState<ModalConfig>({
+    isOpen: false,
+    title: '',
+    message: '',
+  });
+
+  const closeConfirmModal = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const handleConfirmAction = async () => {
+    if (confirmModal.action) {
+      await confirmModal.action();
+    }
+    closeConfirmModal();
+  };
 
   // Whitelist Form State
   const [nomeInput, setNomeInput] = useState('');
@@ -130,10 +159,8 @@ export default function UsuariosPage() {
     }
   }, [loading]);
 
-  const handleAddUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailInput.trim() || !nomeInput.trim()) return;
-
+  // Ações de Whitelist com Confirmação
+  const executeAddUser = async () => {
     const emailClean = emailInput.trim().toLowerCase();
     const nomeClean = nomeInput.trim();
 
@@ -172,22 +199,46 @@ export default function UsuariosPage() {
     setTimeout(() => setFeedback(null), 5000);
   };
 
-  const handleRemoveUser = async (id: string, email: string) => {
+  const requestAddUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.trim() || !nomeInput.trim()) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Confirmar Cadastro na Whitelist',
+      message: `Deseja autorizar o e-mail "${emailInput.trim().toLowerCase()}" (${nomeInput.trim()}) com cargo "${cargoBadges[cargoInput]}" no "${regiaoInput}"?`,
+      confirmText: 'Autorizar Servidor',
+      variant: 'primary',
+      action: () => executeAddUser(),
+    });
+  };
+
+  const executeRemoveUser = async (id: string, email: string) => {
     setUsuariosList((prev) => prev.filter((u) => u.id !== id));
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       await supabase.from('whitelist_emails').delete().eq('email', email.toLowerCase());
+      setFeedback(`✅ Autorização do e-mail ${email} foi revogada com sucesso.`);
+      setTimeout(() => setFeedback(null), 4000);
     } catch (err) {
       console.warn('Exclusão Whitelist Supabase:', err);
     }
   };
 
-  // Cadastro Inicial da Unidade Escolar (Com Geocodificação Reversa)
-  const handleAddEscola = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!escolaNome.trim()) return;
+  const requestRemoveUser = (id: string, email: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Revogar Autorização de Acesso',
+      message: `Tem certeza que deseja revogar o e-mail "${email}" da Whitelist? O usuário perderá o acesso ao SAG imediatamente.`,
+      confirmText: 'Revogar Acesso',
+      variant: 'danger',
+      action: () => executeRemoveUser(id, email),
+    });
+  };
 
+  // Cadastro Inicial da Unidade Escolar com Confirmação
+  const executeAddEscola = async () => {
     const nomeClean = escolaNome.trim();
     const coordsString = `${escolaLat.toFixed(6)},${escolaLng.toFixed(6)}`;
 
@@ -196,7 +247,7 @@ export default function UsuariosPage() {
       nome: nomeClean,
       endereco: escolaEndereco,
       regiao: escolaPolo,
-      grupo_id: 'Grupo 01', // Atribuição posterior na aba de escala
+      grupo_id: 'Grupo 01',
       data_programada: new Date().toISOString().split('T')[0],
       turno_programado: 'Manhã',
       latitude: escolaLat,
@@ -224,7 +275,7 @@ export default function UsuariosPage() {
       if (error) {
         setEscolaFeedback(`⚠️ Erro no Supabase: ${error.message}`);
       } else {
-        setEscolaFeedback(`✅ Escola Municipal "${nomeClean}" cadastrada com o endereço reverso: "${escolaEndereco}"!`);
+        setEscolaFeedback(`✅ Escola Municipal "${nomeClean}" cadastrada com o endereço: "${escolaEndereco}"!`);
         fetchEscolas();
       }
     } catch (err: any) {
@@ -235,19 +286,46 @@ export default function UsuariosPage() {
     setTimeout(() => setEscolaFeedback(null), 5000);
   };
 
-  const handleRemoveEscola = async (id: string) => {
+  const requestAddEscola = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!escolaNome.trim()) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Confirmar Cadastro de Unidade Escolar',
+      message: `Deseja cadastrar a escola "${escolaNome.trim()}" no "${escolaPolo}" com a localização capturada: "${escolaEndereco}"?`,
+      confirmText: 'Cadastrar Escola',
+      variant: 'primary',
+      action: () => executeAddEscola(),
+    });
+  };
+
+  const executeRemoveEscola = async (id: string) => {
     setEscolasList((prev) => prev.filter((e) => e.id !== id));
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       await supabase.from('escolas').delete().eq('id', id);
+      setEscolaFeedback('✅ Unidade escolar removida do banco de dados com sucesso.');
+      setTimeout(() => setEscolaFeedback(null), 4000);
     } catch (err) {
       console.warn('Exclusão Escola Supabase:', err);
     }
   };
 
-  // Salvar a Atribuição de Escala de Visita (Grupo, Data e Horário/Turno)
-  const handleSaveEscalaVisita = async (
+  const requestRemoveEscola = (id: string, nome: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Excluir Unidade Escolar',
+      message: `Tem certeza que deseja remover a escola "${nome}" da rede de ensino?`,
+      confirmText: 'Excluir Escola',
+      variant: 'danger',
+      action: () => executeRemoveEscola(id),
+    });
+  };
+
+  // Salvar Escala de Visita com Confirmação
+  const executeSaveEscalaVisita = async (
     escolaId: string,
     grupoId: string,
     dataProgramada: string,
@@ -273,11 +351,28 @@ export default function UsuariosPage() {
         })
         .eq('id', escolaId);
 
-      setEscalaFeedback(`✅ Escala atualizada: Escola delegada ao ${grupoId} para ${dataProgramada} (${turnoProgramado})!`);
+      setEscalaFeedback(`✅ Escala salva: Escola delegada ao ${grupoId} para ${dataProgramada} (${turnoProgramado})!`);
       setTimeout(() => setEscalaFeedback(null), 4000);
     } catch (err) {
       console.warn('Erro ao atribuir escala:', err);
     }
+  };
+
+  const requestSaveEscalaVisita = (
+    escolaId: string,
+    escolaNome: string,
+    grupoId: string,
+    dataProgramada: string,
+    turnoProgramado: string
+  ) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Confirmar Atribuição de Escala',
+      message: `Deseja atribuir a visita da escola "${escolaNome}" ao ${grupoId} para a data ${dataProgramada} (${turnoProgramado})?`,
+      confirmText: 'Salvar Escala',
+      variant: 'primary',
+      action: () => executeSaveEscalaVisita(escolaId, grupoId, dataProgramada, turnoProgramado),
+    });
   };
 
   const cargoBadges: Record<CargoType, string> = {
@@ -387,7 +482,7 @@ export default function UsuariosPage() {
                 </h2>
               </div>
 
-              <form onSubmit={handleAddEscola} className="space-y-5">
+              <form onSubmit={requestAddEscola} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -507,7 +602,7 @@ export default function UsuariosPage() {
                         </td>
                         <td className="p-3 text-center">
                           <button
-                            onClick={() => handleRemoveEscola(escola.id)}
+                            onClick={() => requestRemoveEscola(escola.id, escola.nome)}
                             className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
                             title="Remover Escola da Rede"
                           >
@@ -641,7 +736,7 @@ export default function UsuariosPage() {
                                 const gEl = document.getElementById(`grupo-${escola.id}`) as HTMLSelectElement;
                                 const dEl = document.getElementById(`data-${escola.id}`) as HTMLInputElement;
                                 const tEl = document.getElementById(`turno-${escola.id}`) as HTMLSelectElement;
-                                handleSaveEscalaVisita(escola.id, gEl.value, dEl.value, tEl.value);
+                                requestSaveEscalaVisita(escola.id, escola.nome, gEl.value, dEl.value, tEl.value);
                               }}
                               className="btn-primary py-2.5 px-4 text-xs font-extrabold flex items-center gap-1.5 shadow-md"
                             >
@@ -677,7 +772,7 @@ export default function UsuariosPage() {
                 <h2 className="text-base font-extrabold text-slate-900">Pré-Autorizar Novo E-mail e Atribuir Cargo</h2>
               </div>
 
-              <form onSubmit={handleAddUser} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <form onSubmit={requestAddUser} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Nome Completo do Servidor:
@@ -813,7 +908,7 @@ export default function UsuariosPage() {
                         <td className="p-3 text-center">
                           {user.email !== 'bolaojpa@gmail.com' && (
                             <button
-                              onClick={() => handleRemoveUser(user.id, user.email)}
+                              onClick={() => requestRemoveUser(user.id, user.email)}
                               className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
                               title="Revogar Autorização de Acesso"
                             >
@@ -830,6 +925,17 @@ export default function UsuariosPage() {
           </div>
         )}
       </main>
+
+      {/* Caixa de Confirmação Global para Operações de Cadastro, Edição e Exclusão */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+        onConfirm={handleConfirmAction}
+        onCancel={closeConfirmModal}
+      />
     </div>
   );
 }
