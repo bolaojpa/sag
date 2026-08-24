@@ -26,10 +26,14 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
   const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
   const [geocodeFeedback, setGeocodeFeedback] = useState<string | null>(null);
 
-  // Geocodificação Reversa via Proxy API Server Node.js (Sem Erros CORS/Navegador)
+  // Geocodificação Reversa via Server API Route (Lat/Lng -> Texto do Endereço)
   const fetchReverseGeocode = async (targetLat: number, targetLng: number) => {
     setIsGeocoding(true);
     setGeocodeFeedback(null);
+
+    // Notifica o formulário pai imediatamente com as novas coordenadas
+    onCoordinatesChange({ lat: targetLat, lng: targetLng, endereco: endereco });
+
     try {
       const response = await fetch(`/api/geocode/reverse?lat=${targetLat}&lng=${targetLng}`);
       const data = await response.json();
@@ -38,21 +42,21 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
         const formattedAddress = data.address;
         setEndereco(formattedAddress);
         onCoordinatesChange({ lat: targetLat, lng: targetLng, endereco: formattedAddress });
-        setGeocodeFeedback(`✅ Geocodificação Reversa: Endereço capturado pelo pino no mapa!`);
+        setGeocodeFeedback(`✅ Endereço capturado pelo pino: "${formattedAddress}"`);
       } else {
         onCoordinatesChange({ lat: targetLat, lng: targetLng });
-        setGeocodeFeedback(`📍 Coordenadas atualizadas pelo pino: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
+        setGeocodeFeedback(`📍 Pino fixado em: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
       }
     } catch (err) {
       console.warn('Erro na Geocodificação Reversa:', err);
       onCoordinatesChange({ lat: targetLat, lng: targetLng });
-      setGeocodeFeedback(`📍 Coordenadas atualizadas pelo pino: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
+      setGeocodeFeedback(`📍 Pino fixado em: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
     } finally {
       setIsGeocoding(false);
     }
   };
 
-  // Inicialização do Leaflet no lado do cliente
+  // Inicialização do Leaflet no cliente
   useEffect(() => {
     let isMounted = true;
 
@@ -79,12 +83,15 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
         const customMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
 
-        // Arrasto do pino -> Geocodificação Reversa
+        // Arrasto do pino -> Atualiza Posição + Geocodificação Reversa
         customMarker.on('dragend', (e: any) => {
           const position = e.target.getLatLng();
           if (isMounted) {
             setLat(position.lat);
             setLng(position.lng);
+            if (leafletMapRef.current) {
+              leafletMapRef.current.panTo([position.lat, position.lng]);
+            }
             fetchReverseGeocode(position.lat, position.lng);
           }
         });
@@ -96,6 +103,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
             setLat(newLat);
             setLng(newLng);
             customMarker.setLatLng([newLat, newLng]);
+            map.panTo([newLat, newLng]);
             fetchReverseGeocode(newLat, newLng);
           }
         });
@@ -116,7 +124,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
     };
   }, []);
 
-  // Geocodificação Direta por Texto via Proxy API Server
+  // Geocodificação Direta por Texto via Multi-Pass Server Proxy
   const handleGeocodeSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!endereco.trim()) return;
@@ -138,21 +146,21 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
         setEndereco(foundAddress);
 
         if (leafletMapRef.current && markerRef.current) {
-          leafletMapRef.current.setView([foundLat, foundLng], 16);
+          leafletMapRef.current.setView([foundLat, foundLng], 17);
           markerRef.current.setLatLng([foundLat, foundLng]);
         }
 
         onCoordinatesChange({ lat: foundLat, lng: foundLng, endereco: foundAddress });
-        setGeocodeFeedback(`✅ Coordenadas capturadas: ${foundLat.toFixed(4)}, ${foundLng.toFixed(4)}`);
+        setGeocodeFeedback(`✅ Endereço localizado! Pino fixado em (${foundLat.toFixed(4)}, ${foundLng.toFixed(4)})`);
       } else {
         setGeocodeFeedback(
-          '⚠️ Endereço não encontrado na busca por texto. Clique diretamente no mapa abaixo para capturar via pino!'
+          '⚠️ Não foi possível encontrar a rua exata por texto. Por favor, clique ou arraste o pino no mapa abaixo para marcar a localização exata!'
         );
       }
     } catch (err: any) {
       console.warn('Erro ao consultar API Server Proxy:', err);
       setGeocodeFeedback(
-        '⚠️ Falha na busca por texto. Clique no pino do mapa para capturar o endereço automaticamente.'
+        '⚠️ Falha na busca por texto. Por favor, clique no pino do mapa para capturar o endereço.'
       );
     } finally {
       setIsGeocoding(false);
@@ -182,6 +190,9 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
               const val = e.target.value;
               setEndereco(val);
               onCoordinatesChange({ lat, lng, endereco: val });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleGeocodeSearch(e);
             }}
             placeholder="Digite o endereço OU clique no mapa abaixo para capturar via pino..."
             className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500 shadow-inner"

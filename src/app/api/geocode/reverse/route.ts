@@ -26,14 +26,13 @@ export async function GET(request: Request) {
 
     const data = await response.json();
     
-    // Formata o endereço amigável em português
     let formattedAddress = data.display_name || '';
     
     if (data.address) {
-      const road = data.address.road || data.address.pedestrian || data.address.suburb || '';
+      const road = data.address.road || data.address.pedestrian || data.address.street || data.address.suburb || data.address.neighbourhood || '';
       const houseNumber = data.address.house_number ? `, ${data.address.house_number}` : '';
-      const suburb = data.address.suburb || data.address.neighbourhood ? ` - ${data.address.suburb || data.address.neighbourhood}` : '';
-      const city = data.address.city || data.address.town || 'João Pessoa';
+      const suburb = (data.address.suburb || data.address.neighbourhood || data.address.residential) ? ` - ${data.address.suburb || data.address.neighbourhood || data.address.residential}` : '';
+      const city = data.address.city || data.address.town || data.address.municipality || 'João Pessoa';
       
       if (road) {
         formattedAddress = `${road}${houseNumber}${suburb}, ${city} - PB`;
@@ -41,9 +40,10 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      address: formattedAddress || data.display_name,
+      address: formattedAddress || data.display_name || `Coordenadas: ${lat}, ${lng}`,
       lat: parseFloat(lat),
       lng: parseFloat(lng),
+      raw: data,
     });
   } catch (err: any) {
     console.error('Erro no Server Proxy Nominatim:', err);
