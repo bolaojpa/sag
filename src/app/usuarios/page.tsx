@@ -98,7 +98,7 @@ export default function UsuariosPage() {
       email: 'bolaojpa@gmail.com',
       cargo: 'coordenacao_geral',
       regiao: 'Todas as Jurisdições',
-      grupo_id: 'Geral (Todos os Grupos)',
+      grupo_id: '',
       status: 'ativo',
     },
   ];
@@ -110,7 +110,7 @@ export default function UsuariosPage() {
   const saveEscolasState = (newList: Escola[]) => {
     setEscolasList(newList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sag_escolas_v5', JSON.stringify(newList));
+      localStorage.setItem('sag_escolas_v6', JSON.stringify(newList));
     }
   };
 
@@ -125,7 +125,7 @@ export default function UsuariosPage() {
       return {
         ...u,
         cargo: u.email.toLowerCase() === 'bolaojpa@gmail.com' ? 'coordenacao_geral' : u.cargo,
-        grupo_id: isAdmin ? 'Geral (Todos os Grupos)' : u.grupo_id || 'Grupo 01',
+        grupo_id: isAdmin ? '' : (u.grupo_id && !u.grupo_id.includes('Geral') ? u.grupo_id : 'Grupo 01'),
       };
     });
   };
@@ -134,7 +134,7 @@ export default function UsuariosPage() {
     const cleanList = sanitizeWhitelist(newList);
     setUsuariosList(cleanList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sag_whitelist_v5', JSON.stringify(cleanList));
+      localStorage.setItem('sag_whitelist_v6', JSON.stringify(cleanList));
     }
   };
 
@@ -152,7 +152,7 @@ export default function UsuariosPage() {
           cargo: item.cargo || 'agente',
           regiao: item.regiao_atuacao || 'Polo Norte',
           grupo_id: (item.cargo === 'coordenacao_geral' || item.cargo === 'coordenador_dados' || item.cargo === 'coordenacao_area')
-            ? 'Geral (Todos os Grupos)'
+            ? ''
             : (item.grupo_id || 'Grupo 01'),
           status: 'ativo',
         }));
@@ -181,11 +181,11 @@ export default function UsuariosPage() {
     }
   };
 
-  // Inicialização com cache local síncrono v5
+  // Inicialização com cache local síncrono v6
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const cachedEscolas = localStorage.getItem('sag_escolas_v5');
+    const cachedEscolas = localStorage.getItem('sag_escolas_v6');
     if (cachedEscolas) {
       try {
         setEscolasList(JSON.parse(cachedEscolas));
@@ -193,10 +193,10 @@ export default function UsuariosPage() {
         setEscolasList(DEFAULT_ESCOLAS);
       }
     } else {
-      localStorage.setItem('sag_escolas_v5', JSON.stringify(DEFAULT_ESCOLAS));
+      localStorage.setItem('sag_escolas_v6', JSON.stringify(DEFAULT_ESCOLAS));
     }
 
-    const cachedWhitelist = localStorage.getItem('sag_whitelist_v5');
+    const cachedWhitelist = localStorage.getItem('sag_whitelist_v6');
     if (cachedWhitelist) {
       try {
         const parsed = JSON.parse(cachedWhitelist);
@@ -205,7 +205,7 @@ export default function UsuariosPage() {
         setUsuariosList(DEFAULT_WHITELIST);
       }
     } else {
-      localStorage.setItem('sag_whitelist_v5', JSON.stringify(DEFAULT_WHITELIST));
+      localStorage.setItem('sag_whitelist_v6', JSON.stringify(DEFAULT_WHITELIST));
     }
 
     if (!loading) {
@@ -971,13 +971,17 @@ export default function UsuariosPage() {
                           </span>
                         </td>
                         <td className="p-3">
-                          {user.cargo === 'coordenacao_geral' || user.cargo === 'coordenador_dados' || user.cargo === 'coordenacao_area' || user.grupo_id?.includes('Geral') ? (
-                            <span className="bg-purple-100 text-purple-900 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-purple-300 inline-flex items-center gap-1">
-                              ✨ Geral (Sem Grupo Específico)
-                            </span>
+                          {user.email.toLowerCase() === 'bolaojpa@gmail.com' ||
+                          user.cargo === 'coordenacao_geral' ||
+                          user.cargo === 'coordenador_dados' ||
+                          user.cargo === 'coordenacao_area' ||
+                          !user.grupo_id ||
+                          user.grupo_id === '' ||
+                          user.grupo_id.includes('Geral') ? (
+                            <span className="text-slate-400 font-extrabold text-sm ml-4">-</span>
                           ) : (
                             <span className="bg-blue-50 text-blue-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-blue-200">
-                              {user.grupo_id || 'Grupo 01'}
+                              {user.grupo_id}
                             </span>
                           )}
                         </td>
