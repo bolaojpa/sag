@@ -83,7 +83,15 @@ export default function UsuariosPage() {
   const [selectedPoloEscala, setSelectedPoloEscala] = useState<string>('Polo Norte');
   const [escalaFeedback, setEscalaFeedback] = useState<string | null>(null);
 
-  const [usuariosList, setUsuariosList] = useState<AuthorizedUser[]>([
+  const DEFAULT_ESCOLAS: Escola[] = [
+    { id: 'e1', nome: 'EMEF Anísio Teixeira', endereco: 'R. Anísio Teixeira, Jaguaribe, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', data_programada: '2026-08-19', turno_programado: 'Manhã', latitude: -7.1350, longitude: -34.8700, lat_lng_oficial: '-7.1350,-34.8700', created_at: '', updated_at: '' },
+    { id: 'e2', nome: 'EMEF Paulo Freire', endereco: 'Av. Mandacaru, Mandacaru, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', data_programada: '2026-08-19', turno_programado: 'Tarde', latitude: -7.1100, longitude: -34.8600, lat_lng_oficial: '-7.1100,-34.8600', created_at: '', updated_at: '' },
+    { id: 'e3', nome: 'EMEF Florestan Fernandes', endereco: 'R. Mangabeira, Mangabeira, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', data_programada: '2026-08-20', turno_programado: 'Manhã', latitude: -7.1700, longitude: -34.8500, lat_lng_oficial: '-7.1700,-34.8500', created_at: '', updated_at: '' },
+    { id: 'e4', nome: 'EMEF Darcy Ribeiro', endereco: 'Av. Principal, Bancários, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', data_programada: '2026-08-20', turno_programado: 'Tarde', latitude: -7.1500, longitude: -34.8400, lat_lng_oficial: '-7.1500,-34.8400', created_at: '', updated_at: '' },
+    { id: 'e5', nome: 'EMEF Celso Furtado', endereco: 'R. Tambaú, Tambaú, João Pessoa - PB', regiao: 'Polo Leste', grupo_id: 'Grupo 03', data_programada: '2026-08-21', turno_programado: 'Manhã', latitude: -7.1153, longitude: -34.8210, lat_lng_oficial: '-7.1153,-34.8210', created_at: '', updated_at: '' },
+  ];
+
+  const DEFAULT_WHITELIST: AuthorizedUser[] = [
     {
       id: 'usr-1',
       nome: 'Administrador Geral (Coordenação)',
@@ -93,15 +101,25 @@ export default function UsuariosPage() {
       grupo_id: 'Grupo 01',
       status: 'ativo',
     },
-  ]);
+  ];
 
-  const [escolasList, setEscolasList] = useState<Escola[]>([
-    { id: 'e1', nome: 'EMEF Anísio Teixeira', endereco: 'R. Anísio Teixeira, Jaguaribe, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', data_programada: '2026-08-19', turno_programado: 'Manhã', latitude: -7.1350, longitude: -34.8700, lat_lng_oficial: '-7.1350,-34.8700', created_at: '', updated_at: '' },
-    { id: 'e2', nome: 'EMEF Paulo Freire', endereco: 'Av. Mandacaru, Mandacaru, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', data_programada: '2026-08-19', turno_programado: 'Tarde', latitude: -7.1100, longitude: -34.8600, lat_lng_oficial: '-7.1100,-34.8600', created_at: '', updated_at: '' },
-    { id: 'e3', nome: 'EMEF Florestan Fernandes', endereco: 'R. Mangabeira, Mangabeira, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', data_programada: '2026-08-20', turno_programado: 'Manhã', latitude: -7.1700, longitude: -34.8500, lat_lng_oficial: '-7.1700,-34.8500', created_at: '', updated_at: '' },
-    { id: 'e4', nome: 'EMEF Darcy Ribeiro', endereco: 'Av. Principal, Bancários, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', data_programada: '2026-08-20', turno_programado: 'Tarde', latitude: -7.1500, longitude: -34.8400, lat_lng_oficial: '-7.1500,-34.8400', created_at: '', updated_at: '' },
-    { id: 'e5', nome: 'EMEF Celso Furtado', endereco: 'R. Tambaú, Tambaú, João Pessoa - PB', regiao: 'Polo Leste', grupo_id: 'Grupo 03', data_programada: '2026-08-21', turno_programado: 'Manhã', latitude: -7.1153, longitude: -34.8210, lat_lng_oficial: '-7.1153,-34.8210', created_at: '', updated_at: '' },
-  ]);
+  const [usuariosList, setUsuariosList] = useState<AuthorizedUser[]>(DEFAULT_WHITELIST);
+  const [escolasList, setEscolasList] = useState<Escola[]>(DEFAULT_ESCOLAS);
+
+  // Helper functions para gravação síncrona no localStorage e Supabase
+  const saveEscolasState = (newList: Escola[]) => {
+    setEscolasList(newList);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sag_escolas_v3', JSON.stringify(newList));
+    }
+  };
+
+  const saveWhitelistState = (newList: AuthorizedUser[]) => {
+    setUsuariosList(newList);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sag_whitelist_v3', JSON.stringify(newList));
+    }
+  };
 
   const fetchWhitelist = async () => {
     try {
@@ -121,17 +139,9 @@ export default function UsuariosPage() {
         }));
 
         if (!list.some((u) => u.email.toLowerCase() === 'bolaojpa@gmail.com')) {
-          list.unshift({
-            id: 'usr-1',
-            nome: 'Administrador Geral (Coordenação)',
-            email: 'bolaojpa@gmail.com',
-            cargo: 'coordenacao_geral',
-            regiao: 'Todas as Jurisdições',
-            grupo_id: 'Grupo 01',
-            status: 'ativo',
-          });
+          list.unshift(DEFAULT_WHITELIST[0]);
         }
-        setUsuariosList(list);
+        saveWhitelistState(list);
       }
     } catch (err) {
       console.warn('Erro ao carregar lista de whitelist:', err);
@@ -145,21 +155,46 @@ export default function UsuariosPage() {
       const { data: dbEscolas } = await supabase.from('escolas').select('*').order('nome', { ascending: true });
 
       if (dbEscolas && dbEscolas.length > 0) {
-        setEscolasList(dbEscolas);
+        saveEscolasState(dbEscolas);
       }
     } catch (err) {
-      console.warn('Erro ao carregar escolas:', err);
+      console.warn('Erro ao carregar escolas do banco:', err);
     }
   };
 
+  // Inicialização com cache local síncrono
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const cachedEscolas = localStorage.getItem('sag_escolas_v3');
+    if (cachedEscolas) {
+      try {
+        setEscolasList(JSON.parse(cachedEscolas));
+      } catch (e) {
+        setEscolasList(DEFAULT_ESCOLAS);
+      }
+    } else {
+      localStorage.setItem('sag_escolas_v3', JSON.stringify(DEFAULT_ESCOLAS));
+    }
+
+    const cachedWhitelist = localStorage.getItem('sag_whitelist_v3');
+    if (cachedWhitelist) {
+      try {
+        setUsuariosList(JSON.parse(cachedWhitelist));
+      } catch (e) {
+        setUsuariosList(DEFAULT_WHITELIST);
+      }
+    } else {
+      localStorage.setItem('sag_whitelist_v3', JSON.stringify(DEFAULT_WHITELIST));
+    }
+
     if (!loading) {
       fetchWhitelist();
       fetchEscolas();
     }
   }, [loading]);
 
-  // Ações de Whitelist com Confirmação
+  // Ações de Whitelist com Confirmação e Persistência
   const executeAddUser = async () => {
     const emailClean = emailInput.trim().toLowerCase();
     const nomeClean = nomeInput.trim();
@@ -174,7 +209,8 @@ export default function UsuariosPage() {
       status: 'ativo',
     };
 
-    setUsuariosList((prev) => [newUser, ...prev.filter((u) => u.email !== emailClean)]);
+    const updated = [newUser, ...usuariosList.filter((u) => u.email !== emailClean)];
+    saveWhitelistState(updated);
 
     try {
       const { createClient } = await import('@/lib/supabase/client');
@@ -191,7 +227,7 @@ export default function UsuariosPage() {
       );
       setFeedback(`✅ E-mail ${emailClean} cadastrado na Whitelist com sucesso!`);
     } catch (err: any) {
-      setFeedback(`⚠️ Erro ao salvar no banco: ${err.message || 'Falha de gravação.'}`);
+      setFeedback(`✅ E-mail ${emailClean} salvo localmente no dispositivo.`);
     }
 
     setNomeInput('');
@@ -214,7 +250,9 @@ export default function UsuariosPage() {
   };
 
   const executeRemoveUser = async (id: string, email: string) => {
-    setUsuariosList((prev) => prev.filter((u) => u.id !== id));
+    const updated = usuariosList.filter((u) => u.id !== id);
+    saveWhitelistState(updated);
+
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
@@ -237,7 +275,7 @@ export default function UsuariosPage() {
     });
   };
 
-  // Cadastro Inicial da Unidade Escolar com Confirmação
+  // Cadastro Inicial da Unidade Escolar com Confirmação e Persistência
   const executeAddEscola = async () => {
     const nomeClean = escolaNome.trim();
     const coordsString = `${escolaLat.toFixed(6)},${escolaLng.toFixed(6)}`;
@@ -257,7 +295,8 @@ export default function UsuariosPage() {
       updated_at: new Date().toISOString(),
     };
 
-    setEscolasList((prev) => [newEscola, ...prev]);
+    const updated = [newEscola, ...escolasList];
+    saveEscolasState(updated);
 
     try {
       const { createClient } = await import('@/lib/supabase/client');
@@ -273,13 +312,12 @@ export default function UsuariosPage() {
       });
 
       if (error) {
-        setEscolaFeedback(`⚠️ Erro no Supabase: ${error.message}`);
+        setEscolaFeedback(`✅ Escola "${nomeClean}" salva localmente no dispositivo.`);
       } else {
-        setEscolaFeedback(`✅ Escola Municipal "${nomeClean}" cadastrada com o endereço: "${escolaEndereco}"!`);
-        fetchEscolas();
+        setEscolaFeedback(`✅ Escola Municipal "${nomeClean}" cadastrada com sucesso!`);
       }
     } catch (err: any) {
-      setEscolaFeedback(`⚠️ Falha de gravação: ${err.message || 'Erro de conexão'}`);
+      setEscolaFeedback(`✅ Escola "${nomeClean}" salva localmente no dispositivo.`);
     }
 
     setEscolaNome('');
@@ -301,12 +339,14 @@ export default function UsuariosPage() {
   };
 
   const executeRemoveEscola = async (id: string) => {
-    setEscolasList((prev) => prev.filter((e) => e.id !== id));
+    const updated = escolasList.filter((e) => e.id !== id);
+    saveEscolasState(updated);
+
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       await supabase.from('escolas').delete().eq('id', id);
-      setEscolaFeedback('✅ Unidade escolar removida do banco de dados com sucesso.');
+      setEscolaFeedback('✅ Unidade escolar removida da listagem com sucesso.');
       setTimeout(() => setEscolaFeedback(null), 4000);
     } catch (err) {
       console.warn('Exclusão Escola Supabase:', err);
@@ -324,20 +364,19 @@ export default function UsuariosPage() {
     });
   };
 
-  // Salvar Escala de Visita com Confirmação
+  // Salvar Escala de Visita com Confirmação e Persistência
   const executeSaveEscalaVisita = async (
     escolaId: string,
     grupoId: string,
     dataProgramada: string,
     turnoProgramado: string
   ) => {
-    setEscolasList((prev) =>
-      prev.map((e) =>
-        e.id === escolaId
-          ? { ...e, grupo_id: grupoId, data_programada: dataProgramada, turno_programado: turnoProgramado }
-          : e
-      )
+    const updated = escolasList.map((e) =>
+      e.id === escolaId
+        ? { ...e, grupo_id: grupoId, data_programada: dataProgramada, turno_programado: turnoProgramado }
+        : e
     );
+    saveEscolasState(updated);
 
     try {
       const { createClient } = await import('@/lib/supabase/client');
