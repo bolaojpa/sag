@@ -98,7 +98,7 @@ export default function UsuariosPage() {
       email: 'bolaojpa@gmail.com',
       cargo: 'coordenacao_geral',
       regiao: 'Todas as Jurisdições',
-      grupo_id: 'Grupo 01',
+      grupo_id: 'Geral (Todos os Grupos)',
       status: 'ativo',
     },
   ];
@@ -110,14 +110,14 @@ export default function UsuariosPage() {
   const saveEscolasState = (newList: Escola[]) => {
     setEscolasList(newList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sag_escolas_v3', JSON.stringify(newList));
+      localStorage.setItem('sag_escolas_v4', JSON.stringify(newList));
     }
   };
 
   const saveWhitelistState = (newList: AuthorizedUser[]) => {
     setUsuariosList(newList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sag_whitelist_v3', JSON.stringify(newList));
+      localStorage.setItem('sag_whitelist_v4', JSON.stringify(newList));
     }
   };
 
@@ -134,7 +134,9 @@ export default function UsuariosPage() {
           email: item.email,
           cargo: item.cargo || 'agente',
           regiao: item.regiao_atuacao || 'Polo Norte',
-          grupo_id: item.grupo_id || 'Grupo 01',
+          grupo_id: (item.cargo === 'coordenacao_geral' || item.cargo === 'coordenador_dados' || item.cargo === 'coordenacao_area')
+            ? 'Geral (Todos os Grupos)'
+            : (item.grupo_id || 'Grupo 01'),
           status: 'ativo',
         }));
 
@@ -879,13 +881,30 @@ export default function UsuariosPage() {
                     Grupo de Campo Vinculado:
                   </label>
                   <select
-                    value={grupoInput}
+                    value={
+                      cargoInput === 'coordenacao_geral' || cargoInput === 'coordenador_dados' || cargoInput === 'coordenacao_area'
+                        ? 'Geral (Todos os Grupos)'
+                        : grupoInput
+                    }
+                    disabled={
+                      cargoInput === 'coordenacao_geral' || cargoInput === 'coordenador_dados' || cargoInput === 'coordenacao_area'
+                    }
                     onChange={(e) => setGrupoInput(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500"
+                    className={`w-full text-xs rounded-xl p-3 font-extrabold focus:ring-2 focus:ring-red-500 border ${
+                      cargoInput === 'coordenacao_geral' || cargoInput === 'coordenador_dados' || cargoInput === 'coordenacao_area'
+                        ? 'bg-purple-50 text-purple-950 border-purple-200 cursor-not-allowed'
+                        : 'bg-slate-50 text-slate-900 border-slate-300'
+                    }`}
                   >
-                    <option value="Grupo 01">Grupo 01</option>
-                    <option value="Grupo 02">Grupo 02</option>
-                    <option value="Grupo 03">Grupo 03</option>
+                    {cargoInput === 'coordenacao_geral' || cargoInput === 'coordenador_dados' || cargoInput === 'coordenacao_area' ? (
+                      <option value="Geral (Todos os Grupos)">✨ Geral (Todos os Grupos / Sem Vínculo)</option>
+                    ) : (
+                      <>
+                        <option value="Grupo 01">Grupo 01</option>
+                        <option value="Grupo 02">Grupo 02</option>
+                        <option value="Grupo 03">Grupo 03</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -934,9 +953,15 @@ export default function UsuariosPage() {
                           </span>
                         </td>
                         <td className="p-3">
-                          <span className="bg-blue-50 text-blue-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-blue-200">
-                            {user.grupo_id || 'Grupo 01'}
-                          </span>
+                          {user.cargo === 'coordenacao_geral' || user.cargo === 'coordenador_dados' || user.cargo === 'coordenacao_area' || user.grupo_id?.includes('Geral') ? (
+                            <span className="bg-purple-100 text-purple-900 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-purple-300 inline-flex items-center gap-1">
+                              ✨ Geral (Sem Grupo Específico)
+                            </span>
+                          ) : (
+                            <span className="bg-blue-50 text-blue-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-blue-200">
+                              {user.grupo_id || 'Grupo 01'}
+                            </span>
+                          )}
                         </td>
                         <td className="p-3 text-slate-700 font-semibold">{user.regiao}</td>
                         <td className="p-3 text-center">
