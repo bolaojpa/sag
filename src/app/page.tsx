@@ -26,27 +26,23 @@ const AgentSchoolMapView = dynamic(
 
 export default function HubOperacionalPage() {
   const { user, profile, cargo, regiao, loading } = useAuth();
-  const [selectedEscolaId, setSelectedEscolaId] = useState<string>('e1');
+  const [selectedEscolaId, setSelectedEscolaId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'acoes' | 'intercorrencia'>('acoes');
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
-  const [escolasList, setEscolasList] = useState<Escola[]>([
-    { id: 'e1', nome: 'EMEF Anísio Teixeira', endereco: 'R. Anísio Teixeira, Jaguaribe, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', latitude: -7.1350, longitude: -34.8700, lat_lng_oficial: '-7.1350,-34.8700', statusVisita: 'visitado', created_at: '', updated_at: '' },
-    { id: 'e2', nome: 'EMEF Paulo Freire', endereco: 'Av. Mandacaru, Mandacaru, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', latitude: -7.1100, longitude: -34.8600, lat_lng_oficial: '-7.1100,-34.8600', statusVisita: 'pendente', created_at: '', updated_at: '' },
-    { id: 'e3', nome: 'EMEF Florestan Fernandes', endereco: 'R. Mangabeira, Mangabeira, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', latitude: -7.1700, longitude: -34.8500, lat_lng_oficial: '-7.1700,-34.8500', statusVisita: 'pendente', created_at: '', updated_at: '' },
-    { id: 'e4', nome: 'EMEF Darcy Ribeiro', endereco: 'Av. Principal, Bancários, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', latitude: -7.1500, longitude: -34.8400, lat_lng_oficial: '-7.1500,-34.8400', statusVisita: 'visitado', created_at: '', updated_at: '' },
-    { id: 'e5', nome: 'EMEF Celso Furtado', endereco: 'R. Tambaú, Tambaú, João Pessoa - PB', regiao: 'Polo Leste', grupo_id: 'Grupo 03', latitude: -7.1153, longitude: -34.8210, lat_lng_oficial: '-7.1153,-34.8210', statusVisita: 'pendente', created_at: '', updated_at: '' },
-  ]);
+  const [escolasList, setEscolasList] = useState<Escola[]>([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('sag_escolas_v6');
+      const cached = localStorage.getItem('sag_escolas_v7');
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
-          if (parsed && parsed.length > 0) {
+          if (parsed && Array.isArray(parsed)) {
             setEscolasList(parsed);
-            setSelectedEscolaId(parsed[0].id);
+            if (parsed.length > 0) {
+              setSelectedEscolaId(parsed[0].id);
+            }
           }
         } catch (e) {
           console.warn('Erro ao ler cache local de escolas:', e);
@@ -60,12 +56,14 @@ export default function HubOperacionalPage() {
         const supabase = createClient();
         const { data: dbEscolas } = await supabase.from('escolas').select('*').order('nome', { ascending: true });
 
-        if (dbEscolas && dbEscolas.length > 0) {
+        if (dbEscolas) {
           setEscolasList(dbEscolas);
           if (typeof window !== 'undefined') {
-            localStorage.setItem('sag_escolas_v6', JSON.stringify(dbEscolas));
+            localStorage.setItem('sag_escolas_v7', JSON.stringify(dbEscolas));
           }
-          setSelectedEscolaId(dbEscolas[0].id);
+          if (dbEscolas.length > 0) {
+            setSelectedEscolaId(dbEscolas[0].id);
+          }
         }
       } catch (err) {
         console.warn('Erro ao carregar escolas no Hub:', err);

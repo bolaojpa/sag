@@ -7,11 +7,35 @@ import { PdfReportView } from '@/components/relatorios/PdfReport';
 import { FileText, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
+import { Escola } from '@/types/database';
+
 export default function RelatoriosPage() {
   const { user, profile, regiao, loading } = useAuth();
-  const [selectedEscola, setSelectedEscola] = useState<string>('EMEF Anísio Teixeira');
+  const [escolas, setEscolas] = useState<Escola[]>([]);
+  const [selectedEscola, setSelectedEscola] = useState<string>('Rede Municipal - Geral');
 
   React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('sag_escolas_v7');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && Array.isArray(parsed)) setEscolas(parsed);
+        } catch (e) {}
+      }
+    }
+
+    const fetchEscolas = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data } = await supabase.from('escolas').select('*').order('nome', { ascending: true });
+        if (data) setEscolas(data);
+      } catch (err) {}
+    };
+
+    fetchEscolas();
+
     if (!loading && (!user || !profile)) {
       window.location.href = '/login';
     }
@@ -59,9 +83,11 @@ export default function RelatoriosPage() {
               className="bg-gray-50 border border-gray-300 rounded-lg p-2 font-medium text-gray-800 focus:ring-2 focus:ring-brand-500"
             >
               <option value="Rede Municipal - Geral">Todas as Escolas (Rede Global)</option>
-              <option value="EMEF Anísio Teixeira">EMEF Anísio Teixeira (Polo Norte)</option>
-              <option value="EMEF Paulo Freire">EMEF Paulo Freire (Polo Norte)</option>
-              <option value="EMEF Florestan Fernandes">EMEF Florestan Fernandes (Polo Sul)</option>
+              {escolas.map((e) => (
+                <option key={e.id} value={e.nome}>
+                  {e.nome} ({e.regiao})
+                </option>
+              ))}
             </select>
           </div>
         </div>

@@ -101,21 +101,34 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({
         <select
           value={selectedEscolaId}
           onChange={(e) => onSelectEscola(e.target.value)}
-          className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 font-semibold shadow-inner"
+          disabled={escolas.length === 0}
+          className={`w-full text-sm rounded-xl p-3 font-semibold shadow-inner border transition-all ${
+            escolas.length === 0
+              ? 'bg-amber-50 text-amber-900 border-amber-300 font-bold'
+              : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-2 focus:ring-red-500'
+          }`}
         >
-          {escolas.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.nome} ({e.regiao})
-            </option>
-          ))}
+          {escolas.length === 0 ? (
+            <option value="">⚠️ Nenhuma escola cadastrada no banco. Acesse "Unidades Escolares" no menu.</option>
+          ) : (
+            escolas.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nome} ({e.regiao})
+              </option>
+            ))
+          )}
         </select>
       </div>
 
       {/* Botão Principal de Check-in */}
       <button
         onClick={handleCheckIn}
-        disabled={loading}
-        className="w-full btn-primary py-4 px-5 text-base font-extrabold flex items-center justify-center gap-2.5 shadow-lg shadow-red-600/20 active:scale-[0.99] transition-all"
+        disabled={loading || escolas.length === 0}
+        className={`w-full py-4 px-5 text-base font-extrabold flex items-center justify-center gap-2.5 rounded-xl transition-all ${
+          escolas.length === 0
+            ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+            : 'btn-primary shadow-lg shadow-red-600/20 active:scale-[0.99]'
+        }`}
       >
         {loading ? (
           <>

@@ -95,13 +95,7 @@ function UsuariosPageContent() {
   const [selectedPoloEscala, setSelectedPoloEscala] = useState<string>('Polo Norte');
   const [escalaFeedback, setEscalaFeedback] = useState<string | null>(null);
 
-  const DEFAULT_ESCOLAS: Escola[] = [
-    { id: 'e1', nome: 'EMEF Anísio Teixeira', endereco: 'R. Anísio Teixeira, Jaguaribe, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', data_programada: '2026-08-19', turno_programado: 'Manhã', latitude: -7.1350, longitude: -34.8700, lat_lng_oficial: '-7.1350,-34.8700', created_at: '', updated_at: '' },
-    { id: 'e2', nome: 'EMEF Paulo Freire', endereco: 'Av. Mandacaru, Mandacaru, João Pessoa - PB', regiao: 'Polo Norte', grupo_id: 'Grupo 01', data_programada: '2026-08-19', turno_programado: 'Tarde', latitude: -7.1100, longitude: -34.8600, lat_lng_oficial: '-7.1100,-34.8600', created_at: '', updated_at: '' },
-    { id: 'e3', nome: 'EMEF Florestan Fernandes', endereco: 'R. Mangabeira, Mangabeira, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', data_programada: '2026-08-20', turno_programado: 'Manhã', latitude: -7.1700, longitude: -34.8500, lat_lng_oficial: '-7.1700,-34.8500', created_at: '', updated_at: '' },
-    { id: 'e4', nome: 'EMEF Darcy Ribeiro', endereco: 'Av. Principal, Bancários, João Pessoa - PB', regiao: 'Polo Sul', grupo_id: 'Grupo 02', data_programada: '2026-08-20', turno_programado: 'Tarde', latitude: -7.1500, longitude: -34.8400, lat_lng_oficial: '-7.1500,-34.8400', created_at: '', updated_at: '' },
-    { id: 'e5', nome: 'EMEF Celso Furtado', endereco: 'R. Tambaú, Tambaú, João Pessoa - PB', regiao: 'Polo Leste', grupo_id: 'Grupo 03', data_programada: '2026-08-21', turno_programado: 'Manhã', latitude: -7.1153, longitude: -34.8210, lat_lng_oficial: '-7.1153,-34.8210', created_at: '', updated_at: '' },
-  ];
+  const DEFAULT_ESCOLAS: Escola[] = [];
 
   const DEFAULT_WHITELIST: AuthorizedUser[] = [
     {
@@ -122,7 +116,7 @@ function UsuariosPageContent() {
   const saveEscolasState = (newList: Escola[]) => {
     setEscolasList(newList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sag_escolas_v6', JSON.stringify(newList));
+      localStorage.setItem('sag_escolas_v7', JSON.stringify(newList));
     }
   };
 
@@ -146,7 +140,7 @@ function UsuariosPageContent() {
     const cleanList = sanitizeWhitelist(newList);
     setUsuariosList(cleanList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sag_whitelist_v6', JSON.stringify(cleanList));
+      localStorage.setItem('sag_whitelist_v7', JSON.stringify(cleanList));
     }
   };
 
@@ -185,7 +179,7 @@ function UsuariosPageContent() {
       const supabase = createClient();
       const { data: dbEscolas } = await supabase.from('escolas').select('*').order('nome', { ascending: true });
 
-      if (dbEscolas && dbEscolas.length > 0) {
+      if (dbEscolas) {
         saveEscolasState(dbEscolas);
       }
     } catch (err) {
@@ -193,11 +187,11 @@ function UsuariosPageContent() {
     }
   };
 
-  // Inicialização com cache local síncrono v6
+  // Inicialização com cache local síncrono v7
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const cachedEscolas = localStorage.getItem('sag_escolas_v6');
+    const cachedEscolas = localStorage.getItem('sag_escolas_v7');
     if (cachedEscolas) {
       try {
         setEscolasList(JSON.parse(cachedEscolas));
@@ -205,10 +199,10 @@ function UsuariosPageContent() {
         setEscolasList(DEFAULT_ESCOLAS);
       }
     } else {
-      localStorage.setItem('sag_escolas_v6', JSON.stringify(DEFAULT_ESCOLAS));
+      localStorage.setItem('sag_escolas_v7', JSON.stringify(DEFAULT_ESCOLAS));
     }
 
-    const cachedWhitelist = localStorage.getItem('sag_whitelist_v6');
+    const cachedWhitelist = localStorage.getItem('sag_whitelist_v7');
     if (cachedWhitelist) {
       try {
         const parsed = JSON.parse(cachedWhitelist);
@@ -217,7 +211,7 @@ function UsuariosPageContent() {
         setUsuariosList(DEFAULT_WHITELIST);
       }
     } else {
-      localStorage.setItem('sag_whitelist_v6', JSON.stringify(DEFAULT_WHITELIST));
+      localStorage.setItem('sag_whitelist_v7', JSON.stringify(DEFAULT_WHITELIST));
     }
 
     if (!loading) {

@@ -148,7 +148,7 @@ export const IntercorrenciaList: React.FC<IntercorrenciaListProps> = ({
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-slate-900 flex items-center gap-1">
                     <Building className="w-3.5 h-3.5 text-red-600" />
-                    {item.escola?.nome || 'EMEF Anísio Teixeira'}
+                    {item.escola?.nome || 'Unidade Escolar'}
                   </span>
                   <span className="text-slate-300">•</span>
                   <span className="font-medium text-slate-600 flex items-center gap-1">
