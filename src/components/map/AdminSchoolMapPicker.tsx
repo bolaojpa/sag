@@ -19,6 +19,8 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const skipAutoSearchRef = useRef<boolean>(false);
 
   const [lat, setLat] = useState<number>(initialLat);
   const [lng, setLng] = useState<number>(initialLng);
@@ -26,13 +28,17 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
   const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
   const [geocodeFeedback, setGeocodeFeedback] = useState<string | null>(null);
 
-  // Geocodificação Reversa via Server API Route (Lat/Lng -> Texto do Endereço)
+  // Sincroniza estado inicial se prop externa mudar
+  useEffect(() => {
+    if (initialEndereco && initialEndereco !== endereco && !isGeocoding) {
+      setEndereco(initialEndereco);
+    }
+  }, [initialEndereco]);
+
+  // 1. Geocodificação Reversa (Arrasto/Clique do Pino -> Atualiza Texto do Endereço)
   const fetchReverseGeocode = async (targetLat: number, targetLng: number) => {
     setIsGeocoding(true);
     setGeocodeFeedback(null);
-
-    // Notifica o formulário pai imediatamente com as novas coordenadas
-    onCoordinatesChange({ lat: targetLat, lng: targetLng, endereco: endereco });
 
     try {
       const response = await fetch(`/api/geocode/reverse?lat=${targetLat}&lng=${targetLng}`);
@@ -40,23 +46,90 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
       if (data && data.address) {
         const formattedAddress = data.address;
+        skipAutoSearchRef.current = true; // Evita re-disparar busca por texto
         setEndereco(formattedAddress);
         onCoordinatesChange({ lat: targetLat, lng: targetLng, endereco: formattedAddress });
         setGeocodeFeedback(`✅ Endereço capturado pelo pino: "${formattedAddress}"`);
       } else {
         onCoordinatesChange({ lat: targetLat, lng: targetLng });
-        setGeocodeFeedback(`📍 Pino fixado em: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
+        setGeocodeFeedback(`📍 Pino fixado no mapa em: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
       }
     } catch (err) {
       console.warn('Erro na Geocodificação Reversa:', err);
       onCoordinatesChange({ lat: targetLat, lng: targetLng });
-      setGeocodeFeedback(`📍 Pino fixado em: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
+      setGeocodeFeedback(`📍 Pino fixado no mapa em: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
     } finally {
       setIsGeocoding(false);
     }
   };
 
-  // Inicialização do Leaflet no cliente
+  // 2. Geocodificação Direta por Texto (Digitação/Busca -> Posição no Mapa e Pino)
+  const handleGeocodeSearch = async (searchTerm?: string) => {
+    const query = (searchTerm !== undefined ? searchTerm : endereco).trim();
+    if (!query || query.length < 3) return;
+
+    setIsGeocoding(true);
+    setGeocodeFeedback(null);
+
+    try {
+      const response = await fetch(`/api/geocode/search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      if (data && data.lat && data.lng) {
+        const foundLat = data.lat;
+        const foundLng = data.lng;
+        const foundAddress = data.displayName || query;
+
+        setLat(foundLat);
+        setLng(foundLng);
+
+        if (leafletMapRef.current && markerRef.current) {
+          leafletMapRef.current.panTo([foundLat, foundLng]);
+          leafletMapRef.current.setZoom(16);
+          markerRef.current.setLatLng([foundLat, foundLng]);
+        }
+
+        skipAutoSearchRef.current = true;
+        setEndereco(foundAddress);
+        onCoordinatesChange({ lat: foundLat, lng: foundLng, endereco: foundAddress });
+        setGeocodeFeedback(`✅ Endereço localizado! Pino fixado em (${foundLat.toFixed(4)}, ${foundLng.toFixed(4)})`);
+      } else {
+        setGeocodeFeedback(
+          '⚠️ Não foi possível localizar a rua exata por texto. Por favor, clique ou arraste o pino no mapa para ajustar!'
+        );
+      }
+    } catch (err: any) {
+      console.warn('Erro ao consultar API Server Proxy:', err);
+      setGeocodeFeedback(
+        '⚠️ Falha na busca por texto. Por favor, clique no pino do mapa para marcar a localização.'
+      );
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  // Handlers do Input de Texto com Debounce Automático ao Digitar
+  const handleInputChange = (newVal: string) => {
+    setEndereco(newVal);
+    onCoordinatesChange({ lat, lng, endereco: newVal });
+
+    if (skipAutoSearchRef.current) {
+      skipAutoSearchRef.current = false;
+      return;
+    }
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (newVal.trim().length >= 6) {
+      debounceTimerRef.current = setTimeout(() => {
+        handleGeocodeSearch(newVal);
+      }, 850);
+    }
+  };
+
+  // Inicialização do Mapa Leaflet
   useEffect(() => {
     let isMounted = true;
 
@@ -65,7 +138,6 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
       const L = await import('leaflet');
 
-      // Corrige ícones padrão do Leaflet no Next.js
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -83,7 +155,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
         const customMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
 
-        // Arrasto do pino -> Atualiza Posição + Geocodificação Reversa
+        // Evento de Arrasto do Pino (dragend) -> Atualiza Coordenadas e Busca Endereço
         customMarker.on('dragend', (e: any) => {
           const position = e.target.getLatLng();
           if (isMounted) {
@@ -96,7 +168,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
           }
         });
 
-        // Clique no mapa -> Move pino + Geocodificação Reversa
+        // Evento de Clique no Mapa -> Move Pino e Busca Endereço
         map.on('click', (e: any) => {
           const { lat: newLat, lng: newLng } = e.latlng;
           if (isMounted) {
@@ -117,6 +189,9 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
     return () => {
       isMounted = false;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       if (leafletMapRef.current) {
         leafletMapRef.current.remove();
         leafletMapRef.current = null;
@@ -124,77 +199,33 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
     };
   }, []);
 
-  // Geocodificação Direta por Texto via Multi-Pass Server Proxy
-  const handleGeocodeSearch = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!endereco.trim()) return;
-
-    setIsGeocoding(true);
-    setGeocodeFeedback(null);
-
-    try {
-      const response = await fetch(`/api/geocode/search?q=${encodeURIComponent(endereco)}`);
-      const data = await response.json();
-
-      if (data && data.lat && data.lng) {
-        const foundLat = data.lat;
-        const foundLng = data.lng;
-        const foundAddress = data.displayName || endereco;
-
-        setLat(foundLat);
-        setLng(foundLng);
-        setEndereco(foundAddress);
-
-        if (leafletMapRef.current && markerRef.current) {
-          leafletMapRef.current.setView([foundLat, foundLng], 17);
-          markerRef.current.setLatLng([foundLat, foundLng]);
-        }
-
-        onCoordinatesChange({ lat: foundLat, lng: foundLng, endereco: foundAddress });
-        setGeocodeFeedback(`✅ Endereço localizado! Pino fixado em (${foundLat.toFixed(4)}, ${foundLng.toFixed(4)})`);
-      } else {
-        setGeocodeFeedback(
-          '⚠️ Não foi possível encontrar a rua exata por texto. Por favor, clique ou arraste o pino no mapa abaixo para marcar a localização exata!'
-        );
-      }
-    } catch (err: any) {
-      console.warn('Erro ao consultar API Server Proxy:', err);
-      setGeocodeFeedback(
-        '⚠️ Falha na busca por texto. Por favor, clique no pino do mapa para capturar o endereço.'
-      );
-    } finally {
-      setIsGeocoding(false);
-    }
-  };
-
   return (
     <div className="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-800 uppercase tracking-wider">
           <Compass className="w-4 h-4 text-red-600" />
-          <span>Geocodificação Reversa & Direta (Server Proxy OpenStreetMap)</span>
+          <span>Geocodificação Reversa & Direta (Sincronização em Tempo Real)</span>
         </div>
         <span className="text-[11px] bg-red-50 text-red-700 font-extrabold px-2.5 py-0.5 rounded-full border border-red-200 flex items-center gap-1">
-          <Navigation className="w-3 h-3 text-red-600" />
-          Pinagem Ativa
+          <Navigation className="w-3 h-3 text-red-600 animate-pulse" />
+          Pinagem Interativa Ativa
         </span>
       </div>
 
-      {/* Input de Endereço + Busca Nominatim */}
+      {/* Input de Endereço Interativo + Botão de Busca */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="flex-1 relative">
           <input
             type="text"
             value={endereco}
-            onChange={(e) => {
-              const val = e.target.value;
-              setEndereco(val);
-              onCoordinatesChange({ lat, lng, endereco: val });
-            }}
+            onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleGeocodeSearch(e);
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleGeocodeSearch();
+              }
             }}
-            placeholder="Digite o endereço OU clique no mapa abaixo para capturar via pino..."
+            placeholder="Digite o endereço completo da escola OU clique/arraste o pino no mapa..."
             className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-xl p-3 font-semibold focus:ring-2 focus:ring-red-500 shadow-inner"
           />
         </div>
@@ -207,12 +238,12 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
           {isGeocoding ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-white" />
-              <span>Processando...</span>
+              <span>Localizando...</span>
             </>
           ) : (
             <>
               <Search className="w-4 h-4 text-white" />
-              <span>Buscar por Texto</span>
+              <span>Localizar no Mapa</span>
             </>
           )}
         </button>
@@ -220,7 +251,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
       {geocodeFeedback && (
         <div
-          className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+          className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
             geocodeFeedback.includes('✅')
               ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
               : 'bg-amber-50 text-amber-900 border border-amber-200'
@@ -235,7 +266,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
         </div>
       )}
 
-      {/* Exibição dos Valores Capturados */}
+      {/* Exibição das Coordenadas Geográficas Capturadas */}
       <div className="grid grid-cols-2 gap-3 text-xs font-semibold bg-white p-3 rounded-xl border border-slate-200">
         <div>
           <span className="text-slate-500 block text-[10px] uppercase font-bold">Latitude do Pino:</span>
@@ -249,13 +280,13 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
       {/* Container do Mapa Interativo Leaflet */}
       <div>
-        <p className="text-[11px] text-slate-800 font-extrabold mb-1 flex items-center gap-1">
-          <MapPin className="w-4 h-4 text-red-600" />
-          Clique ou arraste o pino no mapa para obter o Endereço Reversível na hora:
+        <p className="text-[11px] text-slate-800 font-extrabold mb-1.5 flex items-center gap-1">
+          <MapPin className="w-4 h-4 text-red-600 animate-bounce" />
+          Arraste o pino ou clique no mapa para posicionar e capturar o endereço exato:
         </p>
         <div
           ref={mapContainerRef}
-          className="w-full h-64 rounded-xl border-2 border-slate-300 shadow-inner z-10"
+          className="w-full h-72 rounded-xl border-2 border-slate-300 shadow-inner z-10"
         />
       </div>
     </div>
