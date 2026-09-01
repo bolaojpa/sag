@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { Header } from '@/components/layout/Header';
 import { Nav } from '@/components/layout/Nav';
 import { CargoType, Escola } from '@/types/database';
-import { UserPlus, Shield, UserCheck, Trash2, CheckCircle2, Mail, Building2, MapPin, Plus, Users, Calendar, Clock, Navigation } from 'lucide-react';
+import { UserPlus, Shield, UserCheck, Trash2, CheckCircle2, Mail, Building2, MapPin, Plus, Users, Calendar, Clock, Navigation, Pencil, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 const AdminSchoolMapPicker = dynamic(
@@ -83,7 +83,8 @@ function UsuariosPageContent() {
   const [grupoInput, setGrupoInput] = useState('Grupo 01');
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Escolas Form State (Cadastro Inicial)
+  // Escolas Form State (Cadastro & Edição)
+  const [editingEscolaId, setEditingEscolaId] = useState<string | null>(null);
   const [escolaNome, setEscolaNome] = useState('');
   const [escolaPolo, setEscolaPolo] = useState('Polo Norte');
   const [escolaEndereco, setEscolaEndereco] = useState('Av. Epitácio Pessoa, João Pessoa, PB');
@@ -301,11 +302,83 @@ function UsuariosPageContent() {
     });
   };
 
-  // Cadastro Inicial da Unidade Escolar com Confirmação e Persistência
-  const executeAddEscola = async () => {
+  // Cadastro e Edição de Unidade Escolar com Confirmação e Persistência
+  const handleEditEscolaClick = (escola: Escola) => {
+    setEditingEscolaId(escola.id);
+    setEscolaNome(escola.nome);
+    setEscolaPolo(escola.regiao || 'Polo Norte');
+    setEscolaEndereco(escola.endereco || '');
+    setEscolaLat(escola.latitude || -7.1153);
+    setEscolaLng(escola.longitude || -34.8610);
+
+    const formElement = document.getElementById('form-cadastro-escola');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const cancelEditEscola = () => {
+    setEditingEscolaId(null);
+    setEscolaNome('');
+    setEscolaPolo('Polo Norte');
+    setEscolaEndereco('Av. Epitácio Pessoa, João Pessoa, PB');
+    setEscolaLat(-7.1153);
+    setEscolaLng(-34.8610);
+  };
+
+  const executeSaveEscola = async () => {
     const nomeClean = escolaNome.trim();
     const coordsString = `${escolaLat.toFixed(6)},${escolaLng.toFixed(6)}`;
 
+    if (editingEscolaId) {
+      // MODO EDIÇÃO
+      const updated = escolasList.map((e) =>
+        e.id === editingEscolaId
+          ? {
+              ...e,
+              nome: nomeClean,
+              endereco: escolaEndereco,
+              regiao: escolaPolo,
+              latitude: escolaLat,
+              longitude: escolaLng,
+              lat_lng_oficial: coordsString,
+              updated_at: new Date().toISOString(),
+            }
+          : e
+      );
+      saveEscolasState(updated);
+
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { error } = await supabase
+          .from('escolas')
+          .update({
+            nome: nomeClean,
+            endereco: escolaEndereco,
+            regiao: escolaPolo,
+            latitude: escolaLat,
+            longitude: escolaLng,
+            lat_lng_oficial: coordsString,
+          })
+          .eq('id', editingEscolaId);
+
+        if (error) {
+          setEscolaFeedback(`✅ Alterações da escola "${nomeClean}" salvas localmente no dispositivo.`);
+        } else {
+          setEscolaFeedback(`✅ Unidade Escolar "${nomeClean}" atualizada com sucesso!`);
+        }
+      } catch (err: any) {
+        setEscolaFeedback(`✅ Alterações da escola "${nomeClean}" salvas localmente.`);
+      }
+
+      setEditingEscolaId(null);
+      setEscolaNome('');
+      setTimeout(() => setEscolaFeedback(null), 5000);
+      return;
+    }
+
+    // MODO NOVO CADASTRO
     const newEscola: Escola = {
       id: `esc-${Date.now()}`,
       nome: nomeClean,
@@ -350,17 +423,25 @@ function UsuariosPageContent() {
     setTimeout(() => setEscolaFeedback(null), 5000);
   };
 
-  const requestAddEscola = (e: React.FormEvent) => {
+  const requestSaveEscola = (e: React.FormEvent) => {
     e.preventDefault();
     if (!escolaNome.trim()) return;
 
+    const title = editingEscolaId
+      ? 'Confirmar Edição de Unidade Escolar'
+      : 'Confirmar Cadastro de Unidade Escolar';
+    const message = editingEscolaId
+      ? `Deseja salvar as alterações para a escola "${escolaNome.trim()}" no "${escolaPolo}" com a localização: "${escolaEndereco}"?`
+      : `Deseja cadastrar a escola "${escolaNome.trim()}" no "${escolaPolo}" com a localização capturada: "${escolaEndereco}"?`;
+    const confirmText = editingEscolaId ? 'Salvar Alterações' : 'Cadastrar Escola';
+
     setConfirmModal({
       isOpen: true,
-      title: 'Confirmar Cadastro de Unidade Escolar',
-      message: `Deseja cadastrar a escola "${escolaNome.trim()}" no "${escolaPolo}" com a localização capturada: "${escolaEndereco}"?`,
-      confirmText: 'Cadastrar Escola',
+      title,
+      message,
+      confirmText,
       variant: 'primary',
-      action: () => executeAddEscola(),
+      action: () => executeSaveEscola(),
     });
   };
 
@@ -538,16 +619,25 @@ function UsuariosPageContent() {
               </div>
             )}
 
-            {/* Form de Cadastro de Unidade Escolar */}
-            <div className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-6">
-              <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-red-600" />
-                <h2 className="text-base font-extrabold text-slate-900">
-                  Cadastro Inicial da Unidade Escolar (Mapeamento Geográfico no OpenStreetMap)
-                </h2>
+            {/* Form de Cadastro & Edição de Unidade Escolar */}
+            <div id="form-cadastro-escola" className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-red-600" />
+                  <h2 className="text-base font-extrabold text-slate-900">
+                    {editingEscolaId
+                      ? 'Edição de Unidade Escolar Cadastrada'
+                      : 'Cadastro Inicial da Unidade Escolar (Mapeamento Geográfico no OpenStreetMap)'}
+                  </h2>
+                </div>
+                {editingEscolaId && (
+                  <span className="bg-blue-100 text-blue-900 text-xs font-black px-3 py-1 rounded-full border border-blue-300 animate-pulse">
+                    ✏️ Modo Edição Ativo
+                  </span>
+                )}
               </div>
 
-              <form onSubmit={requestAddEscola} className="space-y-5">
+              <form onSubmit={requestSaveEscola} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -605,14 +695,25 @@ function UsuariosPageContent() {
                   }}
                 />
 
-                <div>
+                <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="submit"
                     className="w-full sm:w-auto btn-primary py-4 px-8 text-xs flex items-center justify-center gap-2 font-extrabold shadow-lg"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>Cadastrar Unidade Escolar na Rede</span>
+                    {editingEscolaId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    <span>{editingEscolaId ? 'Salvar Alterações da Unidade Escolar' : 'Cadastrar Unidade Escolar na Rede'}</span>
                   </button>
+
+                  {editingEscolaId && (
+                    <button
+                      type="button"
+                      onClick={cancelEditEscola}
+                      className="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 py-4 px-6 text-xs flex items-center justify-center gap-2 font-bold rounded-xl transition-all"
+                    >
+                      <X className="w-4 h-4 text-slate-600" />
+                      <span>Cancelar Edição</span>
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
@@ -666,13 +767,24 @@ function UsuariosPageContent() {
                           </span>
                         </td>
                         <td className="p-3 text-center">
-                          <button
-                            onClick={() => requestRemoveEscola(escola.id, escola.nome)}
-                            className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                            title="Remover Escola da Rede"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleEditEscolaClick(escola)}
+                              className="text-blue-600 hover:text-blue-800 p-1.5 rounded-lg hover:bg-blue-50 transition-colors border border-blue-200 shadow-sm flex items-center gap-1 font-bold"
+                              title="Editar Informações da Escola"
+                            >
+                              <Pencil className="w-4 h-4 text-blue-600" />
+                              <span className="hidden sm:inline text-[11px]">Editar</span>
+                            </button>
+
+                            <button
+                              onClick={() => requestRemoveEscola(escola.id, escola.nome)}
+                              className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50 transition-colors border border-red-200 shadow-sm"
+                              title="Remover Escola da Rede"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
