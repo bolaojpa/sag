@@ -10,44 +10,44 @@ interface DesafioItem {
   status: 'Em Análise' | 'Atribuído' | 'Atrasado' | 'Em Progresso' | 'Resolvido';
 }
 
+import { Intercorrencia } from '@/types/database';
+
 export const ExecutiveRecentDesafiosTable: React.FC = () => {
-  const items: DesafioItem[] = [
-    {
-      id: '#C-1024',
-      desafio: 'Falta de Água Potável',
-      escola: 'Escola Municipal Horizonte',
-      severidade: 'Crítica',
-      status: 'Em Análise',
-    },
-    {
-      id: '#C-1023',
-      desafio: 'Falha no Sistema Elétrico',
-      escola: 'Colégio Estadual Futuro',
-      severidade: 'Alta',
-      status: 'Atribuído',
-    },
-    {
-      id: '#C-1022',
-      desafio: 'Ausência de Professores',
-      escola: 'Escola Básica Esperança',
-      severidade: 'Crítica',
-      status: 'Atrasado',
-    },
-    {
-      id: '#C-1021',
-      desafio: 'Danos na Estrutura do Telhado',
-      escola: 'Centro de Ensino Progresso',
-      severidade: 'Alta',
-      status: 'Em Progresso',
-    },
-    {
-      id: '#C-1020',
-      desafio: 'Problemas de Conectividade',
-      escola: 'Escola Técnica Inovação',
-      severidade: 'Média',
-      status: 'Resolvido',
-    },
-  ];
+  const [items, setItems] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    async function loadData() {
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('intercorrencias')
+          .select('*, escolas(nome)')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (data && data.length > 0) {
+          setItems(
+            data.map((item: any) => ({
+              id: item.id.slice(0, 8),
+              desafio: item.descricao || item.tipo,
+              escola: item.escolas?.nome || 'Escola da Rede',
+              severidade: item.urgencia === 'alta' ? 'Crítica' : item.urgencia === 'media' ? 'Alta' : 'Média',
+              status: item.status === 'resolvido' ? 'Resolvido' : item.status === 'em_analise' ? 'Em Análise' : 'Em Progresso',
+            }))
+          );
+        } else {
+          setItems([]);
+        }
+      } catch (e) {
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const getSeveridadeBadge = (sev: 'Crítica' | 'Alta' | 'Média') => {
     switch (sev) {
@@ -91,17 +91,25 @@ export const ExecutiveRecentDesafiosTable: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-semibold text-slate-800">
-            {items.map((row) => (
-              <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
-                <td className="py-3.5 font-mono text-slate-500 font-bold">{row.id}</td>
-                <td className="py-3.5 font-extrabold text-slate-900 pr-2">{row.desafio}</td>
-                <td className="py-3.5 text-slate-600 font-medium pr-2">{row.escola}</td>
-                <td className="py-3.5 text-center pr-2">
-                  {getSeveridadeBadge(row.severidade)}
+            {items.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-slate-400 font-bold">
+                  Nenhum registro ou desafio operacional recente cadastrado.
                 </td>
-                <td className="py-3.5 text-right font-extrabold text-slate-700">{row.status}</td>
               </tr>
-            ))}
+            ) : (
+              items.map((row) => (
+                <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 font-mono text-slate-500 font-bold">{row.id}</td>
+                  <td className="py-3.5 font-extrabold text-slate-900 pr-2">{row.desafio}</td>
+                  <td className="py-3.5 text-slate-600 font-medium pr-2">{row.escola}</td>
+                  <td className="py-3.5 text-center pr-2">
+                    {getSeveridadeBadge(row.severidade)}
+                  </td>
+                  <td className="py-3.5 text-right font-extrabold text-slate-700">{row.status}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

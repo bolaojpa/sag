@@ -49,14 +49,18 @@ export default function IntercorrenciasPage() {
     }
   }, [loading]);
 
-  const handleStatusChange = async (id: string, newStatus: StatusIntercorrenciaType) => {
+  const handleStatusChange = async (id: string, newStatus: StatusIntercorrenciaType, acaoMitigacao?: string) => {
     setIntercorrencias((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+      prev.map((item) => (item.id === id ? { ...item, status: newStatus, acao_mitigacao: acaoMitigacao || item.acao_mitigacao } : item))
     );
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
-      await supabase.from('intercorrencias').update({ status: newStatus }).eq('id', id);
+      const updateData: any = { status: newStatus };
+      if (acaoMitigacao !== undefined) {
+        updateData.acao_mitigacao = acaoMitigacao;
+      }
+      await supabase.from('intercorrencias').update(updateData).eq('id', id);
     } catch (err) {
       console.error('Erro ao atualizar status no Supabase:', err);
     }

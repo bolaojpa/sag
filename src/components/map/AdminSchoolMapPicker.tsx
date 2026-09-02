@@ -3,6 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapPin, Search, Loader2, Compass, AlertCircle, CheckCircle2, Navigation } from 'lucide-react';
 
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
 interface AdminSchoolMapPickerProps {
   initialLat?: number;
   initialLng?: number;
@@ -17,8 +20,8 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
   onCoordinatesChange,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const leafletMapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const leafletMapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const skipAutoSearchRef = useRef<boolean>(false);
 
@@ -28,7 +31,28 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
   const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
   const [geocodeFeedback, setGeocodeFeedback] = useState<string | null>(null);
 
-  // Sincroniza estado inicial se prop externa mudar
+  const onCoordinatesChangeRef = useRef(onCoordinatesChange);
+  useEffect(() => {
+    onCoordinatesChangeRef.current = onCoordinatesChange;
+  }, [onCoordinatesChange]);
+
+  const prevInitialLatRef = useRef(initialLat);
+  const prevInitialLngRef = useRef(initialLng);
+
+  // Sincroniza estado inicial APENAS se a prop externa mudar (ex: Modo Edição), sem atrapalhar o drag interno
+  useEffect(() => {
+    if (initialLat !== prevInitialLatRef.current || initialLng !== prevInitialLngRef.current) {
+      setLat(initialLat);
+      setLng(initialLng);
+      if (leafletMapRef.current && markerRef.current) {
+        leafletMapRef.current.panTo([initialLat, initialLng]);
+        markerRef.current.setLatLng([initialLat, initialLng]);
+      }
+      prevInitialLatRef.current = initialLat;
+      prevInitialLngRef.current = initialLng;
+    }
+  }, [initialLat, initialLng]);
+
   useEffect(() => {
     if (initialEndereco && initialEndereco !== endereco && !isGeocoding) {
       setEndereco(initialEndereco);
@@ -46,17 +70,17 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
       if (data && data.address) {
         const formattedAddress = data.address;
-        skipAutoSearchRef.current = true; // Evita re-disparar busca por texto
+        skipAutoSearchRef.current = true;
         setEndereco(formattedAddress);
-        onCoordinatesChange({ lat: targetLat, lng: targetLng, endereco: formattedAddress });
+        onCoordinatesChangeRef.current({ lat: targetLat, lng: targetLng, endereco: formattedAddress });
         setGeocodeFeedback(`✅ Endereço capturado pelo pino: "${formattedAddress}"`);
       } else {
-        onCoordinatesChange({ lat: targetLat, lng: targetLng });
+        onCoordinatesChangeRef.current({ lat: targetLat, lng: targetLng });
         setGeocodeFeedback(`📍 Pino fixado no mapa em: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
       }
     } catch (err) {
       console.warn('Erro na Geocodificação Reversa:', err);
-      onCoordinatesChange({ lat: targetLat, lng: targetLng });
+      onCoordinatesChangeRef.current({ lat: targetLat, lng: targetLng });
       setGeocodeFeedback(`📍 Pino fixado no mapa em: ${targetLat.toFixed(6)}, ${targetLng.toFixed(6)}`);
     } finally {
       setIsGeocoding(false);
@@ -76,8 +100,8 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
       const data = await response.json();
 
       if (data && data.lat && data.lng) {
-        const foundLat = data.lat;
-        const foundLng = data.lng;
+        const foundLat = parseFloat(data.lat);
+        const foundLng = parseFloat(data.lng);
         const foundAddress = data.displayName || query;
 
         setLat(foundLat);
@@ -91,7 +115,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
         skipAutoSearchRef.current = true;
         setEndereco(foundAddress);
-        onCoordinatesChange({ lat: foundLat, lng: foundLng, endereco: foundAddress });
+        onCoordinatesChangeRef.current({ lat: foundLat, lng: foundLng, endereco: foundAddress });
         setGeocodeFeedback(`✅ Endereço localizado! Pino fixado em (${foundLat.toFixed(4)}, ${foundLng.toFixed(4)})`);
       } else {
         setGeocodeFeedback(
@@ -111,7 +135,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
   // Handlers do Input de Texto com Debounce Automático ao Digitar
   const handleInputChange = (newVal: string) => {
     setEndereco(newVal);
-    onCoordinatesChange({ lat, lng, endereco: newVal });
+    onCoordinatesChangeRef.current({ lat, lng, endereco: newVal });
 
     if (skipAutoSearchRef.current) {
       skipAutoSearchRef.current = false;
@@ -131,61 +155,52 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
 
   // Inicialização do Mapa Leaflet
   useEffect(() => {
+    if (typeof window === 'undefined' || !mapContainerRef.current) return;
+
     let isMounted = true;
 
-    async function initLeaflet() {
-      if (typeof window === 'undefined' || !mapContainerRef.current) return;
+    // Corrige ícones do Leaflet
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    });
 
-      const L = await import('leaflet');
+    if (!leafletMapRef.current) {
+      const map = L.map(mapContainerRef.current).setView([initialLat, initialLng], 14);
 
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap',
+      }).addTo(map);
+
+      const customMarker = L.marker([initialLat, initialLng], { draggable: true, autoPan: true }).addTo(map);
+
+      // Evento de Arrasto do Pino (dragend)
+      customMarker.on('dragend', (e: any) => {
+        const position = e.target.getLatLng();
+        if (isMounted) {
+          setLat(position.lat);
+          setLng(position.lng);
+          fetchReverseGeocode(position.lat, position.lng);
+        }
       });
 
-      if (!leafletMapRef.current && mapContainerRef.current) {
-        const map = L.map(mapContainerRef.current).setView([lat, lng], 14);
+      // Evento de Clique no Mapa
+      map.on('click', (e: any) => {
+        const { lat: newLat, lng: newLng } = e.latlng;
+        if (isMounted) {
+          setLat(newLat);
+          setLng(newLng);
+          customMarker.setLatLng([newLat, newLng]);
+          fetchReverseGeocode(newLat, newLng);
+        }
+      });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        }).addTo(map);
-
-        const customMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
-
-        // Evento de Arrasto do Pino (dragend) -> Atualiza Coordenadas e Busca Endereço
-        customMarker.on('dragend', (e: any) => {
-          const position = e.target.getLatLng();
-          if (isMounted) {
-            setLat(position.lat);
-            setLng(position.lng);
-            if (leafletMapRef.current) {
-              leafletMapRef.current.panTo([position.lat, position.lng]);
-            }
-            fetchReverseGeocode(position.lat, position.lng);
-          }
-        });
-
-        // Evento de Clique no Mapa -> Move Pino e Busca Endereço
-        map.on('click', (e: any) => {
-          const { lat: newLat, lng: newLng } = e.latlng;
-          if (isMounted) {
-            setLat(newLat);
-            setLng(newLng);
-            customMarker.setLatLng([newLat, newLng]);
-            map.panTo([newLat, newLng]);
-            fetchReverseGeocode(newLat, newLng);
-          }
-        });
-
-        leafletMapRef.current = map;
-        markerRef.current = customMarker;
-      }
+      leafletMapRef.current = map;
+      markerRef.current = customMarker;
     }
-
-    initLeaflet();
 
     return () => {
       isMounted = false;
@@ -193,7 +208,12 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
         clearTimeout(debounceTimerRef.current);
       }
       if (leafletMapRef.current) {
-        leafletMapRef.current.remove();
+        try {
+          leafletMapRef.current.stop();
+          leafletMapRef.current.remove();
+        } catch (e) {
+          // Ignore Leaflet unmount animation errors
+        }
         leafletMapRef.current = null;
       }
     };

@@ -24,6 +24,44 @@ function LoginContent() {
     }
   }, [searchParams]);
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setErrorMsg('Preencha o e-mail e a senha.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const supabase = createClient();
+      if (authMode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        setErrorMsg('Cadastro realizado! Se o seu e-mail não estiver na Whitelist, o acesso será negado ao entrar.');
+        setAuthMode('login');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        window.location.href = '/';
+      }
+    } catch (err: any) {
+      console.warn('Erro de autenticação por e-mail:', err);
+      setErrorMsg(err.message || 'Erro ao autenticar com e-mail e senha.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -125,11 +163,59 @@ function LoginContent() {
             </div>
           </div>
 
+          {/* Formulário de E-mail / Senha */}
+          <form onSubmit={handleEmailAuth} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">E-mail Profissional</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seunome@joaopessoa.pb.gov.br"
+                className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl p-3 focus:ring-2 focus:ring-red-500 transition-all"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Senha</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl p-3 focus:ring-2 focus:ring-red-500 transition-all"
+                required
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-xl text-sm font-extrabold transition-all shadow-md shadow-red-600/20 active:scale-[0.98]"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (authMode === 'login' ? 'Entrar' : 'Confirmar Cadastro')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-4 rounded-xl text-sm font-bold transition-all border border-slate-300 active:scale-[0.98]"
+              >
+                {authMode === 'login' ? 'Criar Conta' : 'Já tenho conta'}
+              </button>
+            </div>
+          </form>
+
+          <div className="relative flex items-center py-2">
+            <div className="flex-grow border-t border-slate-200"></div>
+            <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-wider">ou</span>
+            <div className="flex-grow border-t border-slate-200"></div>
+          </div>
+
           {/* Botão Oficial Google OAuth */}
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full btn-primary py-4 px-4 text-sm font-extrabold flex items-center justify-center gap-3 shadow-lg shadow-red-600/20 active:scale-[0.99] transition-all"
+            className="w-full bg-white hover:bg-slate-50 border-2 border-slate-200 py-3.5 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98]"
           >
             {loading ? (
               <>

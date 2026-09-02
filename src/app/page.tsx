@@ -57,10 +57,22 @@ export default function HubOperacionalPage() {
 
     const fetchEscolas = async () => {
       try {
+        const res = await fetch('/api/escolas');
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.data && json.data.length > 0) {
+            setEscolasList(json.data);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('sag_escolas_v7', JSON.stringify(json.data));
+            }
+            return;
+          }
+        }
+
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
         const { data } = await supabase.from('escolas').select('*').order('nome', { ascending: true });
-        if (data) {
+        if (data && data.length > 0) {
           setEscolasList(data);
           if (typeof window !== 'undefined') {
             localStorage.setItem('sag_escolas_v7', JSON.stringify(data));
@@ -85,6 +97,31 @@ export default function HubOperacionalPage() {
     };
   }, [loading, user, profile]);
 
+  // Se for ADMIN / Coordenação, exibe TODAS as unidades da rede cadastradas pelo Admin!
+  // Se for Agente de Campo, exibe as unidades vinculadas ao seu Grupo ou todas do seu Polo.
+  const agentGrupo = (profile?.grupo_id || 'Grupo 01').trim();
+
+  const displayEscolas = escolasList.filter((e) => {
+    // Se o usuário for admin/coordenação ou não tiver grupo definido, vê todas
+    if (isAdmin || !agentGrupo) return true;
+
+    // Normalização para comparar "Grupo 01", "Grupo 1", etc.
+    const cleanAgentGrupo = agentGrupo.toLowerCase().replace(/\s+/g, '');
+    const cleanEscolaGrupo = (e.grupo_id || 'Grupo 01').toLowerCase().replace(/\s+/g, '');
+
+    const matchesRole = !e.grupo_id || cleanEscolaGrupo === cleanAgentGrupo || cleanEscolaGrupo === 'geral';
+    const matchesPolo = selectedPoloFilter === 'todos' || e.regiao === selectedPoloFilter;
+
+    return matchesRole && matchesPolo;
+  });
+
+  // Auto-seleciona a primeira escola disponível para facilitar o Check-in
+  useEffect(() => {
+    if (displayEscolas.length > 0 && (!selectedEscolaId || !displayEscolas.some(e => e.id === selectedEscolaId))) {
+      setSelectedEscolaId(displayEscolas[0].id);
+    }
+  }, [displayEscolas, selectedEscolaId]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center">
@@ -102,20 +139,6 @@ export default function HubOperacionalPage() {
   if (isAdmin) {
     return <AdminDashboardView escolas={escolasList} />;
   }
-
-  // Se for ADMIN / Coordenação, exibe TODAS as unidades da rede cadastradas pelo Admin!
-  // Se for Agente de Campo, exibe as unidades vinculadas ao seu Grupo.
-  const agentGrupo = profile?.grupo_id || 'Grupo 01';
-
-  const displayEscolas = escolasList.filter((e) => {
-    const matchesRole = (isAdmin || !agentGrupo)
-      ? true
-      : (!e.grupo_id || e.grupo_id === agentGrupo);
-
-    const matchesPolo = selectedPoloFilter === 'todos' || e.regiao === selectedPoloFilter;
-
-    return matchesRole && matchesPolo;
-  });
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">

@@ -77,6 +77,7 @@ export interface Intercorrencia {
   urgencia: UrgenciaType;
   descricao: string;
   status: StatusIntercorrenciaType;
+  acao_mitigacao?: string;
   created_at: string;
   updated_at: string;
   // Joins

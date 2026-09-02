@@ -120,7 +120,12 @@ export const AgentSchoolMapView: React.FC<AgentSchoolMapViewProps> = ({
     return () => {
       isMounted = false;
       if (leafletMapRef.current) {
-        leafletMapRef.current.remove();
+        try {
+          leafletMapRef.current.stop();
+          leafletMapRef.current.remove();
+        } catch (e) {
+          // Ignore Leaflet unmount animation errors
+        }
         leafletMapRef.current = null;
       }
     };

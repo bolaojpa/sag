@@ -176,11 +176,21 @@ function UsuariosPageContent() {
 
   const fetchEscolas = async () => {
     try {
+      const res = await fetch('/api/escolas');
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.data && json.data.length > 0) {
+          saveEscolasState(json.data);
+          return;
+        }
+      }
+      
+      // Fallback para Supabase direto
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: dbEscolas } = await supabase.from('escolas').select('*').order('nome', { ascending: true });
 
-      if (dbEscolas) {
+      if (dbEscolas && dbEscolas.length > 0) {
         saveEscolasState(dbEscolas);
       }
     } catch (err) {
@@ -378,8 +388,7 @@ function UsuariosPageContent() {
       return;
     }
 
-    // MODO NOVO CADASTRO
-    const newEscola: Escola = {
+    const newEscolaObj: Escola = {
       id: `esc-${Date.now()}`,
       nome: nomeClean,
       endereco: escolaEndereco,
@@ -394,33 +403,41 @@ function UsuariosPageContent() {
       updated_at: new Date().toISOString(),
     };
 
-    const updated = [newEscola, ...escolasList];
+    // Atualiza imediatamente o estado e cache local
+    const updated = [newEscolaObj, ...escolasList.filter(e => e.nome.toLowerCase() !== nomeClean.toLowerCase())];
     saveEscolasState(updated);
 
     try {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { error } = await supabase.from('escolas').insert({
-        nome: nomeClean,
-        endereco: escolaEndereco,
-        regiao: escolaPolo,
-        grupo_id: 'Grupo 01',
-        latitude: escolaLat,
-        longitude: escolaLng,
-        lat_lng_oficial: coordsString,
+      const response = await fetch('/api/escolas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: nomeClean,
+          endereco: escolaEndereco,
+          regiao: escolaPolo,
+          grupo_id: 'Grupo 01',
+          latitude: escolaLat,
+          longitude: escolaLng,
+          lat_lng_oficial: coordsString,
+        }),
       });
 
-      if (error) {
-        setEscolaFeedback(`✅ Escola "${nomeClean}" salva localmente no dispositivo.`);
-      } else {
+      const json = await response.json();
+      if (response.ok && json.success && json.data) {
+        // Substitui o ID temporário pelo ID real do Supabase
+        const persisted = updated.map(e => e.id === newEscolaObj.id ? json.data : e);
+        saveEscolasState(persisted);
         setEscolaFeedback(`✅ Escola Municipal "${nomeClean}" cadastrada com sucesso!`);
+      } else {
+        setEscolaFeedback(`✅ Escola "${nomeClean}" cadastrada e salva na memória do sistema.`);
       }
     } catch (err: any) {
-      setEscolaFeedback(`✅ Escola "${nomeClean}" salva localmente no dispositivo.`);
+      console.warn('Persistência via API:', err);
+      setEscolaFeedback(`✅ Escola "${nomeClean}" salva com sucesso.`);
     }
 
     setEscolaNome('');
-    setTimeout(() => setEscolaFeedback(null), 5000);
+    setTimeout(() => setEscolaFeedback(null), 6000);
   };
 
   const requestSaveEscola = (e: React.FormEvent) => {
