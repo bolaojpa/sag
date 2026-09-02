@@ -13,6 +13,7 @@ import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert, Building2, Eye } 
 import { useAuth } from '@/context/AuthContext';
 import { SchoolProfileModal } from '@/components/modals/SchoolProfileModal';
 import { ActivityStream } from '@/components/dashboard/ActivityStream';
+import { AdminDashboardView } from '@/components/dashboard/AdminDashboardView';
 
 const AgentSchoolMapView = dynamic(
   () => import('@/components/map/AgentSchoolMapView'),
@@ -41,21 +42,16 @@ export default function HubOperacionalPage() {
     setIsModalOpen(true);
   };
 
+  const isAdmin = ['coordenacao_geral', 'coordenador_dados', 'coordenacao_area', 'gerente_polo'].includes(cargo);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('sag_escolas_v7');
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
-          if (parsed && Array.isArray(parsed)) {
-            setEscolasList(parsed);
-            if (parsed.length > 0) {
-              setSelectedEscolaId(parsed[0].id);
-            }
-          }
-        } catch (e) {
-          console.warn('Erro ao ler cache local de escolas:', e);
-        }
+          if (parsed && Array.isArray(parsed)) setEscolasList(parsed);
+        } catch (e) {}
       }
     }
 
@@ -63,44 +59,37 @@ export default function HubOperacionalPage() {
       try {
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
-        const { data: dbEscolas } = await supabase.from('escolas').select('*').order('nome', { ascending: true });
-
-        if (dbEscolas) {
-          setEscolasList(dbEscolas);
+        const { data } = await supabase.from('escolas').select('*').order('nome', { ascending: true });
+        if (data) {
+          setEscolasList(data);
           if (typeof window !== 'undefined') {
-            localStorage.setItem('sag_escolas_v7', JSON.stringify(dbEscolas));
-          }
-          if (dbEscolas.length > 0) {
-            setSelectedEscolaId(dbEscolas[0].id);
+            localStorage.setItem('sag_escolas_v7', JSON.stringify(data));
           }
         }
-      } catch (err) {
-        console.warn('Erro ao carregar escolas no Hub:', err);
-      }
+      } catch (err) {}
     };
 
     fetchEscolas();
 
-    const unsubscribe = initOfflineSyncListener((count) => {
-      setSyncNotice(`${count} registro(s) salvos offline foram sincronizados com sucesso!`);
+    if (!loading && (!user || !profile)) {
+      window.location.href = '/login';
+    }
+
+    const cleanupSync = initOfflineSyncListener((syncedCount) => {
+      setSyncNotice(`${syncedCount} registro(s) offline sincronizado(s) com sucesso!`);
       setTimeout(() => setSyncNotice(null), 5000);
     });
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (cleanupSync) cleanupSync();
     };
-  }, []);
-
-  useEffect(() => {
-    if (!loading && (!user || !profile)) {
-      window.location.href = '/login';
-    }
   }, [loading, user, profile]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
-        <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-white text-xs font-bold mt-3">Carregando Dashboard Admin SAG...</p>
       </div>
     );
   }
@@ -109,9 +98,13 @@ export default function HubOperacionalPage() {
     return null;
   }
 
+  // Visão do ADMIN: Renderiza a Dashboard Exata da Imagem
+  if (isAdmin) {
+    return <AdminDashboardView escolas={escolasList} />;
+  }
+
   // Se for ADMIN / Coordenação, exibe TODAS as unidades da rede cadastradas pelo Admin!
   // Se for Agente de Campo, exibe as unidades vinculadas ao seu Grupo.
-  const isAdmin = cargo === 'coordenacao_geral' || cargo === 'coordenador_dados' || cargo === 'coordenacao_area';
   const agentGrupo = profile?.grupo_id || 'Grupo 01';
 
   const displayEscolas = escolasList.filter((e) => {
