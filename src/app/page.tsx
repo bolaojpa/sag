@@ -97,6 +97,8 @@ export default function HubOperacionalPage() {
     };
   }, [loading, user, profile]);
 
+  const agentGrupo = (profile?.grupo_id || 'Grupo 01').trim();
+
   // Escolas visíveis para o Agente ou Admin
   const displayEscolas = escolasList.filter((e) => {
     if (selectedPoloFilter === 'todos') return true;
