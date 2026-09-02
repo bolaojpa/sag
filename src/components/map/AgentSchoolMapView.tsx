@@ -37,7 +37,11 @@ export const AgentSchoolMapView: React.FC<AgentSchoolMapViewProps> = ({
       const centerLng = escolas.length > 0 && escolas[0].longitude ? escolas[0].longitude : -34.8610;
 
       if (!leafletMapRef.current && mapContainerRef.current) {
-        const map = L.map(mapContainerRef.current).setView([centerLat, centerLng], 13);
+        // Desativa zoomAnimation para evitar _leaflet_pos em hot-reloads e trocas de aba
+        const map = L.map(mapContainerRef.current, {
+          zoomAnimation: false,
+          fadeAnimation: false,
+        }).setView([centerLat, centerLng], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
@@ -110,7 +114,9 @@ export const AgentSchoolMapView: React.FC<AgentSchoolMapViewProps> = ({
         });
 
         if (bounds.isValid() && escolas.length > 1) {
-          map.fitBounds(bounds, { padding: [40, 40] });
+          try {
+            map.fitBounds(bounds, { padding: [40, 40], animate: false });
+          } catch (e) {}
         }
       }
     }
@@ -121,7 +127,7 @@ export const AgentSchoolMapView: React.FC<AgentSchoolMapViewProps> = ({
       isMounted = false;
       if (leafletMapRef.current) {
         try {
-          leafletMapRef.current.stop();
+          leafletMapRef.current.off();
           leafletMapRef.current.remove();
         } catch (e) {
           // Ignore Leaflet unmount animation errors

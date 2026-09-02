@@ -168,14 +168,17 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
     });
 
     if (!leafletMapRef.current) {
-      const map = L.map(mapContainerRef.current).setView([initialLat, initialLng], 14);
+      const map = L.map(mapContainerRef.current, {
+        zoomAnimation: false,
+        fadeAnimation: false,
+      }).setView([initialLat, initialLng], 14);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap',
       }).addTo(map);
 
-      const customMarker = L.marker([initialLat, initialLng], { draggable: true, autoPan: true }).addTo(map);
+      const customMarker = L.marker([initialLat, initialLng], { draggable: true, autoPan: false }).addTo(map);
 
       // Evento de Arrasto do Pino (dragend)
       customMarker.on('dragend', (e: any) => {
@@ -209,7 +212,7 @@ export const AdminSchoolMapPicker: React.FC<AdminSchoolMapPickerProps> = ({
       }
       if (leafletMapRef.current) {
         try {
-          leafletMapRef.current.stop();
+          leafletMapRef.current.off();
           leafletMapRef.current.remove();
         } catch (e) {
           // Ignore Leaflet unmount animation errors
