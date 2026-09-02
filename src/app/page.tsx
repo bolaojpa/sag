@@ -9,8 +9,10 @@ import { AcaoForm } from '@/components/acoes/AcaoForm';
 import { IntercorrenciaForm } from '@/components/intercorrencias/IntercorrenciaForm';
 import { Escola } from '@/types/database';
 import { initOfflineSyncListener } from '@/lib/offline/sync';
-import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert } from 'lucide-react';
+import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert, Building2, Eye } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { SchoolProfileModal } from '@/components/modals/SchoolProfileModal';
+import { ActivityStream } from '@/components/dashboard/ActivityStream';
 
 const AgentSchoolMapView = dynamic(
   () => import('@/components/map/AgentSchoolMapView'),
@@ -31,6 +33,13 @@ export default function HubOperacionalPage() {
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const [escolasList, setEscolasList] = useState<Escola[]>([]);
   const [selectedPoloFilter, setSelectedPoloFilter] = useState<string>('todos');
+  const [selectedSchoolModal, setSelectedSchoolModal] = useState<Escola | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  const handleOpenSchoolModal = (escola: Escola) => {
+    setSelectedSchoolModal(escola);
+    setIsModalOpen(true);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -230,6 +239,27 @@ export default function HubOperacionalPage() {
           onSelectEscola={setSelectedEscolaId}
         />
 
+        {/* Botão de Atalho para Abrir Perfil CRM da Escola Selecionada */}
+        {displayEscolas.length > 0 && (
+          <div className="bg-slate-100 p-3.5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-slate-800 font-bold">
+              <Building2 className="w-4 h-4 text-red-600" />
+              <span>Unidade Selecionada: <strong className="text-slate-900">{displayEscolas.find((e) => e.id === selectedEscolaId)?.nome || 'Selecione uma escola'}</strong></span>
+            </div>
+
+            <button
+              onClick={() => {
+                const found = displayEscolas.find((e) => e.id === selectedEscolaId);
+                if (found) handleOpenSchoolModal(found);
+              }}
+              className="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5 text-red-700 hover:text-red-800 border-red-200"
+            >
+              <Eye className="w-4 h-4 text-red-600" />
+              <span>Ver Perfil CRM da Escola</span>
+            </button>
+          </div>
+        )}
+
         {/* Módulo 2: Seletor de Ação x Intercorrência */}
         <div className="space-y-4">
           <div className="flex bg-slate-200/80 p-1.5 rounded-2xl border border-slate-300/80">
@@ -261,6 +291,17 @@ export default function HubOperacionalPage() {
             <IntercorrenciaForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
           )}
         </div>
+
+        {/* Feed de Atividades CRM em Tempo Real */}
+        <ActivityStream />
+
+        {/* Modal CRM de Perfil da Escola */}
+        <SchoolProfileModal
+          escola={selectedSchoolModal}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSelectForCheckIn={(id) => setSelectedEscolaId(id)}
+        />
       </main>
     </div>
   );
