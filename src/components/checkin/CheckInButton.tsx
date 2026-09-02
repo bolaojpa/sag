@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { MapPin, CheckCircle2, Loader2, AlertCircle, Building2, Navigation } from 'lucide-react';
 import { Escola } from '@/types/database';
+import confetti from 'canvas-confetti';
 
 interface CheckInButtonProps {
   escolas: Escola[];
@@ -25,6 +26,16 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({
   } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const triggerConfetti = () => {
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.8 },
+      });
+    } catch (e) {}
+  };
+
   const handleCheckIn = () => {
     if (!selectedEscolaId) {
       setErrorMsg('Selecione uma escola para realizar o check-in.');
@@ -46,6 +57,7 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({
 
           setLastCheckIn({ escolaNome, timestamp, coords });
           setLoading(false);
+          triggerConfetti();
 
           if (onCheckInSuccess) {
             onCheckInSuccess({ escola_id: selectedEscolaId, coords, timestamp: new Date().toISOString() });
@@ -58,6 +70,7 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({
 
           setLastCheckIn({ escolaNome, timestamp, coords });
           setLoading(false);
+          triggerConfetti();
 
           if (onCheckInSuccess) {
             onCheckInSuccess({ escola_id: selectedEscolaId, coords, timestamp: new Date().toISOString() });
@@ -69,6 +82,7 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({
       const timestamp = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       setLastCheckIn({ escolaNome, timestamp, coords: 'Navegador sem suporte GPS' });
       setLoading(false);
+      triggerConfetti();
       if (onCheckInSuccess) {
         onCheckInSuccess({ escola_id: selectedEscolaId, coords: 'N/A', timestamp: new Date().toISOString() });
       }
