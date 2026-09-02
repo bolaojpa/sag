@@ -67,25 +67,32 @@ function LoginContent() {
     setErrorMsg(null);
     try {
       const supabase = createClient();
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      // Captura o domínio real onde a aplicação está rodando (seja Vercel ou local)
+      const currentOrigin = typeof window !== 'undefined' && window.location.origin 
+        ? window.location.origin 
+        : '';
+
+      const redirectUrl = `${currentOrigin}/auth/callback`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${origin}/auth/callback`,
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 
       if (error) {
         console.warn('Supabase OAuth Error:', error.message);
-        setErrorMsg(`⚠️ Domínio Supabase não alcançado ou não configurado (${error.message}). Você pode utilizar o modo de teste abaixo.`);
-        setShowDemoOptions(true);
+        setErrorMsg(`⚠️ Erro na autenticação com o Google: ${error.message}`);
         setLoading(false);
       }
     } catch (err: any) {
       console.warn('Erro de conexão OAuth Supabase:', err);
-      setErrorMsg('⚠️ O projeto Supabase em nuvem não foi localizado via DNS. Utilize as opções de simulação de login abaixo para testar.');
-      setShowDemoOptions(true);
+      setErrorMsg('⚠️ Falha ao conectar ao serviço de autenticação do Google.');
       setLoading(false);
     }
   };
