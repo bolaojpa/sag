@@ -29,8 +29,8 @@ export default function HubOperacionalPage() {
   const [selectedEscolaId, setSelectedEscolaId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'acoes' | 'intercorrencia'>('acoes');
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
-
   const [escolasList, setEscolasList] = useState<Escola[]>([]);
+  const [selectedPoloFilter, setSelectedPoloFilter] = useState<string>('todos');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -99,10 +99,6 @@ export default function HubOperacionalPage() {
   if (!user || !profile) {
     return null;
   }
-
-  // Se for ADMIN / Coordenação, exibe TODAS as unidades da rede cadastradas pelo Admin!
-  // Se for Agente de Campo, exibe as unidades vinculadas ao seu Grupo.
-  const [selectedPoloFilter, setSelectedPoloFilter] = useState<string>('todos');
 
   // Se for ADMIN / Coordenação, exibe TODAS as unidades da rede cadastradas pelo Admin!
   // Se for Agente de Campo, exibe as unidades vinculadas ao seu Grupo.
