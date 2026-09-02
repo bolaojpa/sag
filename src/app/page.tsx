@@ -102,12 +102,22 @@ export default function HubOperacionalPage() {
 
   // Se for ADMIN / Coordenação, exibe TODAS as unidades da rede cadastradas pelo Admin!
   // Se for Agente de Campo, exibe as unidades vinculadas ao seu Grupo.
+  const [selectedPoloFilter, setSelectedPoloFilter] = useState<string>('todos');
+
+  // Se for ADMIN / Coordenação, exibe TODAS as unidades da rede cadastradas pelo Admin!
+  // Se for Agente de Campo, exibe as unidades vinculadas ao seu Grupo.
   const isAdmin = cargo === 'coordenacao_geral' || cargo === 'coordenador_dados' || cargo === 'coordenacao_area';
   const agentGrupo = profile?.grupo_id || 'Grupo 01';
-  
-  const displayEscolas = (isAdmin || !agentGrupo)
-    ? escolasList
-    : escolasList.filter((e) => !e.grupo_id || e.grupo_id === agentGrupo);
+
+  const displayEscolas = escolasList.filter((e) => {
+    const matchesRole = (isAdmin || !agentGrupo)
+      ? true
+      : (!e.grupo_id || e.grupo_id === agentGrupo);
+
+    const matchesPolo = selectedPoloFilter === 'todos' || e.regiao === selectedPoloFilter;
+
+    return matchesRole && matchesPolo;
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -141,7 +151,7 @@ export default function HubOperacionalPage() {
             </h2>
             <p className="text-xs text-slate-600 font-semibold mt-0.5">
               Cargo: <span className="font-extrabold text-slate-900 uppercase">{cargo.replace('_', ' ')}</span> | Grupo Escalado:{' '}
-              <span className="font-extrabold text-red-700">{agentGrupo}</span>
+              <span className="font-extrabold text-red-700">{isAdmin ? '-' : agentGrupo}</span>
             </p>
           </div>
           <div className="flex items-center gap-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
@@ -150,6 +160,31 @@ export default function HubOperacionalPage() {
               <p className="font-extrabold text-slate-900">PWA Contingência Offline</p>
               <p className="text-[11px] text-slate-500 font-medium">Modo de Coleta Rápida (&lt; 3 min)</p>
             </div>
+          </div>
+        </div>
+
+        {/* Seletor Interativo de Polo / Regional */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-red-600" />
+            <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+              Filtrar Unidades Escolares por Polo:
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+            {['todos', 'Polo Norte', 'Polo Sul', 'Polo Leste', 'Polo Oeste'].map((polo) => (
+              <button
+                key={polo}
+                onClick={() => setSelectedPoloFilter(polo)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border ${
+                  selectedPoloFilter === polo
+                    ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {polo === 'todos' ? '🌐 Todos os Polos' : polo}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -189,7 +224,7 @@ export default function HubOperacionalPage() {
         {/* NOVO MÓDULO: Mapa do OpenStreetMap Leaflet.js para Agentes com Botão de Rota GPS */}
         <AgentSchoolMapView
           escolas={displayEscolas}
-          grupoNome={isAdmin ? 'Todas as Unidades da Rede (Visão Admin)' : agentGrupo}
+          grupoNome={isAdmin ? (selectedPoloFilter === 'todos' ? 'Todas as Unidades (Visão Admin)' : selectedPoloFilter) : agentGrupo}
         />
 
         {/* Módulo 1: Check-in Transparente via GPS */}
