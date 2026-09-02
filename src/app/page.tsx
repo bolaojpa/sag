@@ -97,22 +97,10 @@ export default function HubOperacionalPage() {
     };
   }, [loading, user, profile]);
 
-  // Se for ADMIN / Coordenação, exibe TODAS as unidades da rede cadastradas pelo Admin!
-  // Se for Agente de Campo, exibe as unidades vinculadas ao seu Grupo ou todas do seu Polo.
-  const agentGrupo = (profile?.grupo_id || 'Grupo 01').trim();
-
+  // Escolas visíveis para o Agente ou Admin
   const displayEscolas = escolasList.filter((e) => {
-    // Se o usuário for admin/coordenação ou não tiver grupo definido, vê todas
-    if (isAdmin || !agentGrupo) return true;
-
-    // Normalização para comparar "Grupo 01", "Grupo 1", etc.
-    const cleanAgentGrupo = agentGrupo.toLowerCase().replace(/\s+/g, '');
-    const cleanEscolaGrupo = (e.grupo_id || 'Grupo 01').toLowerCase().replace(/\s+/g, '');
-
-    const matchesRole = !e.grupo_id || cleanEscolaGrupo === cleanAgentGrupo || cleanEscolaGrupo === 'geral';
-    const matchesPolo = selectedPoloFilter === 'todos' || e.regiao === selectedPoloFilter;
-
-    return matchesRole && matchesPolo;
+    if (selectedPoloFilter === 'todos') return true;
+    return e.regiao === selectedPoloFilter;
   });
 
   // Auto-seleciona a primeira escola disponível para facilitar o Check-in

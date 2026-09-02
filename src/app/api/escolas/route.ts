@@ -20,7 +20,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { nome, endereco, regiao, grupo_id, latitude, longitude, lat_lng_oficial } = body;
+    const { nome, endereco, regiao, latitude, longitude, lat_lng_oficial } = body;
 
     if (!nome) {
       return NextResponse.json({ error: 'Nome da escola é obrigatório' }, { status: 400 });
@@ -28,15 +28,17 @@ export async function POST(request: Request) {
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
-    // Tenta inserir na tabela escolas
+    // Constrói payload com as colunas oficiais presentes no schema do Supabase
     const insertPayload: any = {
-      nome,
+      nome: nome.trim(),
       regiao: regiao || 'Polo Norte',
-      grupo_id: grupo_id || 'Grupo 01',
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null,
-      lat_lng_oficial: lat_lng_oficial || null,
     };
+
+    if (lat_lng_oficial) {
+      insertPayload.lat_lng_oficial = lat_lng_oficial;
+    } else if (latitude && longitude) {
+      insertPayload.lat_lng_oficial = `${latitude},${longitude}`;
+    }
 
     if (endereco) {
       insertPayload.endereco = endereco;
