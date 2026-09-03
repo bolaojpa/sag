@@ -118,7 +118,7 @@ export default function HubOperacionalPage() {
   // Visão do AGENTE DE CAMPO: Renderiza dentro da mesma casca moderna AppShell (Sidebar + Header + Visual Limpo)
   return (
     <AppShell title="Hub Operacional & Ações de Campo">
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-6">
         {/* Banner de Sincronização Concluída */}
         {syncNotice && (
           <div className="bg-emerald-600 text-white p-4 rounded-2xl shadow-md flex items-center justify-between text-sm font-extrabold animate-pulse">
