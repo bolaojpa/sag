@@ -560,8 +560,12 @@ function UsuariosPageContent() {
   useEffect(() => {
     if (!loading && (!user || !profile)) {
       window.location.href = '/login';
+      return;
     }
-  }, [loading, user, profile]);
+    if (!loading && user && !isAdmin) {
+      window.location.href = '/';
+    }
+  }, [loading, user, profile, isAdmin]);
 
   if (loading) {
     return (
@@ -571,7 +575,7 @@ function UsuariosPageContent() {
     );
   }
 
-  if (!user || !profile) {
+  if (!user || !profile || !isAdmin) {
     return null;
   }
 

@@ -27,16 +27,19 @@ interface AdminSidebarProps {
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children, isOpen, onClose }) => {
   const pathname = usePathname();
   const { user, profile, cargo, signOut } = useAuth();
+  const isAdmin = ['coordenacao_geral', 'coordenador_dados', 'coordenacao_area', 'gerente_polo'].includes(cargo);
 
-  const navItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Escolas', href: '/usuarios?tab=escolas', icon: Building2 },
-    { label: 'Ações', href: '/', icon: ClipboardList },
-    { label: 'Alertas', href: '/intercorrencias', icon: Bell },
-    { label: 'Relatórios', href: '/relatorios', icon: TrendingUp },
-    { label: 'Configurações', href: '/usuarios?tab=whitelist', icon: Settings },
-    { label: 'Perfil', href: '/usuarios', icon: User },
+  // Lista de itens de navegação baseada no perfil de acesso
+  const allNavItems = [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, adminOnly: true },
+    { label: 'Ações de Campo', href: '/', icon: ClipboardList, adminOnly: false },
+    { label: 'Alertas', href: '/intercorrencias', icon: Bell, adminOnly: false },
+    { label: 'Escolas', href: '/usuarios?tab=escolas', icon: Building2, adminOnly: true },
+    { label: 'Relatórios', href: '/relatorios', icon: TrendingUp, adminOnly: true },
+    { label: 'Configurações', href: '/usuarios?tab=whitelist', icon: Settings, adminOnly: true },
   ];
+
+  const navItems = allNavItems.filter((item) => !item.adminOnly || isAdmin);
 
   const cargoLabels: Record<string, string> = {
     agente: 'Agente Educacional',
