@@ -29,7 +29,6 @@ const AgentSchoolMapView = dynamic(
 export default function HubOperacionalPage() {
   const { user, profile, cargo, regiao, loading } = useAuth();
   const [selectedEscolaId, setSelectedEscolaId] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'acoes' | 'intercorrencia'>('acoes');
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const [escolasList, setEscolasList] = useState<Escola[]>([]);
   const [selectedPoloFilter, setSelectedPoloFilter] = useState<string>('todos');
@@ -260,38 +259,32 @@ export default function HubOperacionalPage() {
           )}
         </div>
 
-        {/* Módulo 2: Seletor de Ação x Intercorrência */}
-        <div className="space-y-4">
-          <div className="flex bg-slate-200/70 p-1.5 rounded-2xl border border-slate-300/80">
-            <button
-              onClick={() => setActiveTab('acoes')}
-              className={`flex-1 py-3 text-xs sm:text-sm font-extrabold rounded-xl transition-all ${
-                activeTab === 'acoes'
-                  ? 'bg-white text-red-700 shadow-md ring-1 ring-red-500/20'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              + Registro de Ação Diária
-            </button>
-            <button
-              onClick={() => setActiveTab('intercorrencia')}
-              className={`flex-1 py-3 text-xs sm:text-sm font-extrabold rounded-xl transition-all ${
-                activeTab === 'intercorrencia'
-                  ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              ⚠️ Central de Intercorrências
-            </button>
+        {/* Módulo 1: Registro de Ação Diária (Lançamento Contínuo) */}
+        <div className="bg-white rounded-3xl p-4 sm:p-8 border border-slate-200/90 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+              <span>1. Registro de Ação Diária</span>
+            </h3>
+            <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+              Rotina & Atendimentos
+            </span>
           </div>
+          <AcaoForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
+        </div>
 
-          <div className="bg-white rounded-3xl p-4 sm:p-8 border border-slate-200/90 shadow-sm">
-            {activeTab === 'acoes' ? (
-              <AcaoForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
-            ) : (
-              <IntercorrenciaForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
-            )}
+        {/* Módulo 2: Central de Intercorrências (Alerta de Risco) */}
+        <div className="bg-white rounded-3xl p-4 sm:p-8 border border-slate-200/90 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <span>2. Central de Intercorrências & Alertas</span>
+            </h3>
+            <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+              Semáforo Operacional
+            </span>
           </div>
+          <IntercorrenciaForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
         </div>
 
         {/* Feed de Atividades CRM em Tempo Real */}
