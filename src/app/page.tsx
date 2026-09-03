@@ -191,35 +191,74 @@ export default function HubOperacionalPage() {
           />
         </div>
 
-        {/* Módulo 1: Check-in Transparente via GPS */}
-        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-sm">
-          <CheckInButton
-            escolas={displayEscolas}
-            selectedEscolaId={selectedEscolaId}
-            onSelectEscola={setSelectedEscolaId}
-          />
-        </div>
-
-        {/* Botão de Atalho para Abrir Perfil CRM da Escola Selecionada */}
-        {displayEscolas.length > 0 && (
-          <div className="bg-slate-100/90 p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-slate-800 font-bold">
-              <Building2 className="w-4 h-4 text-red-600" />
-              <span>Unidade Selecionada: <strong className="text-slate-900">{displayEscolas.find((e) => e.id === selectedEscolaId)?.nome || 'Selecione uma escola'}</strong></span>
+        {/* Módulo: Seleção da Unidade Escolar Atendida (Atrelada ao Agente/Grupo) */}
+        <div className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-3xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-red-50 text-red-600 rounded-2xl shadow-inner border border-red-100">
+                <Building2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Unidade Escolar Atendida</h2>
+                <p className="text-xs text-slate-500 font-medium">Escolas vinculadas à sua escala de campo e regional</p>
+              </div>
             </div>
-
-            <button
-              onClick={() => {
-                const found = displayEscolas.find((e) => e.id === selectedEscolaId);
-                if (found) handleOpenSchoolModal(found);
-              }}
-              className="bg-white hover:bg-slate-50 text-red-600 border border-slate-200 font-extrabold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-colors"
-            >
-              <Eye className="w-4 h-4 text-red-600" />
-              <span>Ver Perfil CRM da Escola</span>
-            </button>
+            <span className="text-xs bg-red-50 text-red-700 font-extrabold px-3 py-1 rounded-full border border-red-200/80 flex items-center gap-1 shadow-sm">
+              <Building2 className="w-3.5 h-3.5 text-red-600" />
+              {displayEscolas.length} {displayEscolas.length === 1 ? 'escola disponível' : 'escolas disponíveis'}
+            </span>
           </div>
-        )}
+
+          <div className="space-y-3">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+              Selecione a Unidade Escolar para Registro de Atividades:
+            </label>
+            <select
+              value={selectedEscolaId}
+              onChange={(e) => setSelectedEscolaId(e.target.value)}
+              disabled={displayEscolas.length === 0}
+              className={`w-full text-sm rounded-2xl p-3.5 font-bold shadow-inner border transition-all ${
+                displayEscolas.length === 0
+                  ? 'bg-amber-50 text-amber-900 border-amber-300'
+                  : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-2 focus:ring-red-500'
+              }`}
+            >
+              {displayEscolas.length === 0 ? (
+                <option value="">⚠️ Nenhuma unidade escolar atribuída para o seu polo ou grupo no momento.</option>
+              ) : (
+                displayEscolas.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nome} — {e.regiao} {e.endereco ? `(${e.endereco})` : ''}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          {/* Atalho de Perfil da Escola Selecionada */}
+          {selectedEscolaId && displayEscolas.find((e) => e.id === selectedEscolaId) && (
+            <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="text-slate-700 font-medium">
+                📍 Endereço:{' '}
+                <strong className="text-slate-900 font-extrabold">
+                  {displayEscolas.find((e) => e.id === selectedEscolaId)?.endereco || 'Endereço mapeado via OpenStreetMap'}
+                </strong>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const found = displayEscolas.find((e) => e.id === selectedEscolaId);
+                  if (found) handleOpenSchoolModal(found);
+                }}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 transition-colors border border-slate-200"
+              >
+                <Eye className="w-4 h-4 text-red-600" />
+                <span>Ver Perfil Detalhado da Escola</span>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Módulo 2: Seletor de Ação x Intercorrência */}
         <div className="space-y-4">
