@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { 
   Compass, 
   LayoutDashboard, 
@@ -26,6 +26,8 @@ interface AdminSidebarProps {
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children, isOpen, onClose }) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams ? searchParams.get('tab') : null;
   const { user, profile, cargo, signOut } = useAuth();
   const isAdmin = ['coordenacao_geral', 'coordenador_dados', 'coordenacao_area', 'gerente_polo'].includes(cargo);
 
@@ -47,6 +49,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children, isOpen, on
     coordenacao_area: 'Coordenação de Área',
     coordenador_dados: 'Coordenação de Dados',
     coordenacao_geral: 'Administrador Geral',
+  };
+
+  const isItemActive = (itemHref: string) => {
+    if (itemHref.includes('?tab=')) {
+      const [base, query] = itemHref.split('?tab=');
+      if (pathname !== base) return false;
+      // Se tiver ?tab= na rota do item, confere se o tab da URL é exatamente esse
+      return currentTab === query || (!currentTab && query === 'escolas');
+    }
+    return pathname === itemHref;
   };
 
   return (
@@ -86,19 +98,19 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children, isOpen, on
         <div className="p-4 space-y-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href.includes('?') && pathname === item.href.split('?')[0]);
+            const active = isItemActive(item.href);
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl font-bold text-sm transition-all duration-200 ${
-                  isActive
+                  active
                     ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/25 ring-1 ring-red-500/30 font-extrabold'
                     : 'text-slate-400 hover:text-white hover:bg-slate-850 border border-transparent'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-slate-400'}`} />
                 <span>{item.label}</span>
               </Link>
             );
