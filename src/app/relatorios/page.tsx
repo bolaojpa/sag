@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { PdfReportView } from '@/components/relatorios/PdfReport';
