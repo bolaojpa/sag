@@ -61,6 +61,49 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, nome, endereco, regiao, latitude, longitude, lat_lng_oficial } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID da escola é obrigatório para atualização' }, { status: 400 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const updatePayload: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (nome) updatePayload.nome = nome.trim();
+    if (regiao) updatePayload.regiao = regiao;
+    if (endereco) updatePayload.endereco = endereco;
+
+    if (lat_lng_oficial) {
+      updatePayload.lat_lng_oficial = lat_lng_oficial;
+    } else if (latitude && longitude) {
+      updatePayload.lat_lng_oficial = `${latitude},${longitude}`;
+    }
+
+    const { data, error } = await supabase
+      .from('escolas')
+      .update(updatePayload)
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error('Erro ao atualizar escola via Supabase:', error);
+      return NextResponse.json({ error: error.message, details: error }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, data: data ? data[0] : null });
+  } catch (err: any) {
+    console.error('Erro no PUT /api/escolas:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

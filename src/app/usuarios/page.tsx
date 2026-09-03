@@ -315,12 +315,23 @@ function UsuariosPageContent() {
 
   // Cadastro e Edição de Unidade Escolar com Confirmação e Persistência
   const handleEditEscolaClick = (escola: Escola) => {
+    let parsedLat = escola.latitude;
+    let parsedLng = escola.longitude;
+
+    if ((parsedLat === undefined || parsedLat === null) && escola.lat_lng_oficial) {
+      const parts = escola.lat_lng_oficial.split(',');
+      if (parts.length === 2) {
+        parsedLat = parseFloat(parts[0]);
+        parsedLng = parseFloat(parts[1]);
+      }
+    }
+
     setEditingEscolaId(escola.id);
     setEscolaNome(escola.nome);
     setEscolaPolo(escola.regiao || 'Polo Norte');
     setEscolaEndereco(escola.endereco || '');
-    setEscolaLat(escola.latitude || -7.1153);
-    setEscolaLng(escola.longitude || -34.8610);
+    setEscolaLat(parsedLat !== undefined && !isNaN(parsedLat) ? parsedLat : -7.1153);
+    setEscolaLng(parsedLng !== undefined && !isNaN(parsedLng) ? parsedLng : -34.8610);
 
     const formElement = document.getElementById('form-cadastro-escola');
     if (formElement) {
@@ -361,26 +372,28 @@ function UsuariosPageContent() {
       saveEscolasState(updated);
 
       try {
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        const { error } = await supabase
-          .from('escolas')
-          .update({
+        const response = await fetch('/api/escolas', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editingEscolaId,
             nome: nomeClean,
             endereco: escolaEndereco,
             regiao: escolaPolo,
             latitude: escolaLat,
             longitude: escolaLng,
             lat_lng_oficial: coordsString,
-          })
-          .eq('id', editingEscolaId);
+          }),
+        });
 
-        if (error) {
-          setEscolaFeedback(`✅ Alterações da escola "${nomeClean}" salvas localmente no dispositivo.`);
+        const json = await response.json();
+        if (response.ok && json.success) {
+          setEscolaFeedback(`✅ Unidade Escolar "${nomeClean}" e novo endereço atualizados com sucesso!`);
         } else {
-          setEscolaFeedback(`✅ Unidade Escolar "${nomeClean}" atualizada com sucesso!`);
+          setEscolaFeedback(`✅ Unidade Escolar "${nomeClean}" atualizada no dispositivo.`);
         }
       } catch (err: any) {
+        console.warn('Erro ao atualizar via PUT /api/escolas:', err);
         setEscolaFeedback(`✅ Alterações da escola "${nomeClean}" salvas localmente.`);
       }
 
@@ -730,6 +743,7 @@ function UsuariosPageContent() {
 
                 {/* Componente Leaflet de Geocodificação Reversa por Pino */}
                 <AdminSchoolMapPicker
+                  key={`${editingEscolaId || 'new'}-${escolaLat}-${escolaLng}`}
                   initialLat={escolaLat}
                   initialLng={escolaLng}
                   initialEndereco={escolaEndereco}
