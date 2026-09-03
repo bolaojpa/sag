@@ -330,8 +330,11 @@ function UsuariosPageContent() {
     setEscolaNome(escola.nome);
     setEscolaPolo(escola.regiao || 'Polo Norte');
     setEscolaEndereco(escola.endereco || '');
-    setEscolaLat(parsedLat !== undefined && !isNaN(parsedLat) ? parsedLat : -7.1153);
-    setEscolaLng(parsedLng !== undefined && !isNaN(parsedLng) ? parsedLng : -34.8610);
+    const finalLat = (parsedLat !== undefined && parsedLat !== null && !isNaN(Number(parsedLat))) ? Number(parsedLat) : -7.1153;
+    const finalLng = (parsedLng !== undefined && parsedLng !== null && !isNaN(Number(parsedLng))) ? Number(parsedLng) : -34.8610;
+
+    setEscolaLat(finalLat);
+    setEscolaLng(finalLng);
 
     const formElement = document.getElementById('form-cadastro-escola');
     if (formElement) {
