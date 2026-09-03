@@ -284,7 +284,12 @@ export default function HubOperacionalPage() {
               Semáforo Operacional
             </span>
           </div>
-          <IntercorrenciaForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
+          <IntercorrenciaForm
+            escolaId={selectedEscolaId}
+            escolaNome={displayEscolas.find((e) => e.id === selectedEscolaId)?.nome || 'Unidade Escolar'}
+            agenteId={user?.id || 'agente_demo_123'}
+            agenteNome={profile?.nome || user?.email || 'Agente Educacional'}
+          />
         </div>
 
         {/* Feed de Atividades CRM em Tempo Real */}

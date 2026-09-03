@@ -84,3 +84,17 @@ export interface Intercorrencia {
   escola?: Escola;
   agente?: Profile;
 }
+
+export interface ChamadoReabertura {
+  id: string;
+  agente_id: string;
+  agente_nome?: string;
+  escola_id: string;
+  escola_nome?: string;
+  data_bloqueio: string;
+  motivo: string;
+  status: 'pendente' | 'aprovado' | 'rejeitado';
+  resposta_admin?: string;
+  created_at: string;
+  updated_at: string;
+}

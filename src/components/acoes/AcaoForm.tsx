@@ -157,33 +157,39 @@ export const AcaoForm: React.FC<AcaoFormProps> = ({ escolaId, agenteId, onSucces
           className="w-full btn-primary py-4 px-5 text-base font-extrabold flex items-center justify-center gap-2.5 shadow-lg shadow-red-600/20 active:scale-[0.99] transition-all"
         >
           <Send className="w-5 h-5 text-white" />
-          <span>Salvar Registro de Ação</span>
+          <span>{isSubmitting ? 'Salvando Registro...' : 'Salvar Registro de Ação'}</span>
         </button>
       </form>
 
-      {/* Confirmação Visual */}
+      {/* Sinalização Visual Destacada de Salvamento */}
       {lastSaved && (
         <div
-          className={`mt-4 p-4 rounded-xl border text-xs flex items-center gap-3 shadow-inner ${
+          className={`mt-4 p-4 rounded-2xl border text-xs flex items-center justify-between gap-3 shadow-md animate-bounce-short transition-all ${
             lastSaved.offline
-              ? 'bg-amber-50 text-amber-900 border-amber-200'
-              : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+              ? 'bg-amber-500 text-white border-amber-600 shadow-amber-500/20'
+              : 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-600/25'
           }`}
         >
-          {lastSaved.offline ? (
-            <WifiOff className="w-5 h-5 text-amber-600 shrink-0" />
-          ) : (
-            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
-          )}
-          <div>
-            <p className="font-extrabold text-sm">
-              {lastSaved.offline ? 'Salvo localmente (PWA Offline)' : 'Registro Confirmado no Servidor'}
-            </p>
-            <p className="text-[11px] font-medium opacity-90 mt-0.5">
-              {lastSaved.tipo} — <span className="font-bold">{lastSaved.alunos}</span> {lastSaved.alunos === 1 ? 'aluno atendido' : 'alunos atendidos'}.
-              {lastSaved.offline && ' Será sincronizado silenciosamente ao reconectar.'}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl">
+              {lastSaved.offline ? (
+                <WifiOff className="w-6 h-6 text-white" />
+              ) : (
+                <CheckCircle className="w-6 h-6 text-white" />
+              )}
+            </div>
+            <div>
+              <p className="font-black text-sm tracking-tight">
+                {lastSaved.offline ? '⚡ Salvo em Modo Offline (PWA)' : '✅ Ação Registrada com Sucesso no Servidor!'}
+              </p>
+              <p className="text-xs font-semibold opacity-95 mt-0.5">
+                {lastSaved.tipo} • <span className="font-extrabold">{lastSaved.alunos}</span> {lastSaved.alunos === 1 ? 'aluno atendido' : 'alunos atendidos'}.
+              </p>
+            </div>
           </div>
+          <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-full shrink-0">
+            Confirmado
+          </span>
         </div>
       )}
 
