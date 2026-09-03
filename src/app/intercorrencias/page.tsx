@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Header } from '@/components/layout/Header';
-import { Nav } from '@/components/layout/Nav';
+import { AppShell } from '@/components/layout/AppShell';
 import { IntercorrenciaList } from '@/components/intercorrencias/IntercorrenciaList';
 import { IntercorrenciaForm } from '@/components/intercorrencias/IntercorrenciaForm';
 import { Intercorrencia, StatusIntercorrenciaType } from '@/types/database';
@@ -81,28 +80,30 @@ export default function IntercorrenciasPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-      <Nav />
-
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
+    <AppShell
+      title="Central de Alertas & Intercorrências"
+      onNewActionClick={() => setShowForm(true)}
+    >
+      <div className="space-y-6">
         {/* Banner CRM Central de Intercorrências */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <AlertOctagon className="w-6 h-6 text-brand-600" />
-              <h1 className="text-xl font-extrabold text-gray-900">
-                Central de Intercorrências (Semáforo de Alertas)
-              </h1>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-red-50 rounded-xl text-red-600">
+                <AlertOctagon className="w-6 h-6 text-red-600" />
+              </div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                Gestão de Ocorrências & Semáforo de Risco
+              </h2>
             </div>
-            <p className="text-xs text-gray-600 mt-1">
-              Classificação por semáforo: 🟢 Baixa | 🟡 Média | 🔴 Alta. Acompanhamento prioritário da gestão.
+            <p className="text-xs text-slate-500 font-medium mt-1">
+              Classificação por semáforo: 🟢 Baixa | 🟡 Média | 🔴 Alta. Tratativa prioritária pela coordenação.
             </p>
           </div>
 
           <button
             onClick={() => setShowForm(!showForm)}
-            className="btn-primary py-2.5 px-4 text-xs flex items-center gap-2"
+            className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold py-3 px-5 text-xs rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
           >
             {showForm ? (
               <>
@@ -120,27 +121,29 @@ export default function IntercorrenciasPage() {
 
         {/* Exibição Alternada: Formulário vs Lista CRM */}
         {showForm ? (
-          <IntercorrenciaForm
-            escolaId="e1"
-            agenteId={user?.id || 'agente_demo'}
-            onSuccess={() => {
-              setShowForm(false);
-              fetchIntercorrencias();
-            }}
-          />
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm">
+            <IntercorrenciaForm
+              escolaId="e1"
+              agenteId={user?.id || 'agente_demo'}
+              onSuccess={() => {
+                setShowForm(false);
+                fetchIntercorrencias();
+              }}
+            />
+          </div>
         ) : (
           <div className="space-y-4">
             {/* Barra de Filtros CRM */}
-            <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-gray-700 font-semibold">
-                <Filter className="w-4 h-4 text-brand-600" />
-                <span>Filtros do Painel:</span>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-700 font-bold">
+                <Filter className="w-4 h-4 text-red-600" />
+                <span>Filtrar Alertas por Urgência & Status:</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={urgenciaFilter}
                   onChange={(e) => setUrgenciaFilter(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brand-500 font-medium"
+                  className="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-red-500 font-bold shadow-inner"
                 >
                   <option value="todos">Todas Urgências</option>
                   <option value="alta">🔴 Alta Urgência</option>
@@ -151,10 +154,10 @@ export default function IntercorrenciasPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brand-500 font-medium"
+                  className="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-red-500 font-bold shadow-inner"
                 >
                   <option value="todos">Todos Status</option>
-                  <option value="aberto">Aberto</option>
+                  <option value="aberto">Em Aberto</option>
                   <option value="em_analise">Em Análise</option>
                   <option value="resolvido">Resolvido</option>
                 </select>
@@ -168,7 +171,7 @@ export default function IntercorrenciasPage() {
             />
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

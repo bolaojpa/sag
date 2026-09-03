@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Bell, Settings, User, Plus, Search, ChevronDown, Sparkles } from 'lucide-react';
+import { Bell, Settings, User, Plus, Search, ChevronDown, Sparkles, Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface AdminHeaderBarProps {
   title?: string;
+  onMenuToggle?: () => void;
   onNewActionClick?: () => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
@@ -13,6 +14,7 @@ interface AdminHeaderBarProps {
 
 export const AdminHeaderBar: React.FC<AdminHeaderBarProps> = ({
   title = 'Dashboard',
+  onMenuToggle,
   onNewActionClick,
   searchQuery = '',
   onSearchChange,
@@ -20,10 +22,20 @@ export const AdminHeaderBar: React.FC<AdminHeaderBarProps> = ({
   const { profile, user } = useAuth();
 
   return (
-    <header className="bg-white border-b border-slate-200/90 px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-30 select-none shadow-xs">
-      {/* Title & Page Header */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+    <header className="bg-white border-b border-slate-200/90 px-4 sm:px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-30 select-none shadow-xs">
+      {/* Left: Mobile Menu Button & Title */}
+      <div className="flex items-center gap-3">
+        {onMenuToggle && (
+          <button
+            type="button"
+            onClick={onMenuToggle}
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl lg:hidden transition-colors"
+            title="Abrir Menu Lateral"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        )}
+        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">
           {title}
         </h1>
       </div>

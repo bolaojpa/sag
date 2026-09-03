@@ -1,10 +1,7 @@
-'use client';
-
 import React, { useState } from 'react';
-import { Header } from '@/components/layout/Header';
-import { Nav } from '@/components/layout/Nav';
+import { AppShell } from '@/components/layout/AppShell';
 import { PdfReportView } from '@/components/relatorios/PdfReport';
-import { FileText, Filter } from 'lucide-react';
+import { FileText, Filter, Printer, Download } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 import { Escola } from '@/types/database';
@@ -54,47 +51,48 @@ export default function RelatoriosPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <div className="print:hidden">
-        <Header />
-        <Nav />
-      </div>
-
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
+    <AppShell title="Emissão de Relatórios Executivos">
+      <div className="space-y-6">
         {/* Banner CRM de Controle de Relatório */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4 print:hidden">
-          <div className="flex items-center gap-2">
-            <FileText className="w-6 h-6 text-brand-600" />
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-red-50 text-red-600 rounded-2xl">
+              <FileText className="w-6 h-6 text-red-600" />
+            </div>
             <div>
-              <h1 className="text-lg font-extrabold text-gray-900 leading-tight">
-                Emissão de Relatórios Oficiais (Formato A4 Impressão / PDF)
-              </h1>
-              <p className="text-xs text-gray-600">
-                Relatório executivo otimizado em P&B para arquivo e prestação de contas do Programa Iniciativa Futuro.
+              <h2 className="text-xl font-black text-slate-900 leading-tight tracking-tight">
+                Relatórios Oficiais (Formato A4 Impressão / PDF)
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Relatório executivo de monitoramento e prestação de contas do Programa Iniciativa Futuro.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
-            <Filter className="w-4 h-4 text-brand-600" />
-            <select
-              value={selectedEscola}
-              onChange={(e) => setSelectedEscola(e.target.value)}
-              className="bg-gray-50 border border-gray-300 rounded-lg p-2 font-medium text-gray-800 focus:ring-2 focus:ring-brand-500"
-            >
-              <option value="Rede Municipal - Geral">Todas as Escolas (Rede Global)</option>
-              {escolas.map((e) => (
-                <option key={e.id} value={e.nome}>
-                  {e.nome} ({e.regiao})
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-2xl shadow-inner">
+              <Filter className="w-4 h-4 text-red-600 ml-2" />
+              <select
+                value={selectedEscola}
+                onChange={(e) => setSelectedEscola(e.target.value)}
+                className="bg-transparent text-slate-800 font-bold p-1.5 focus:outline-none text-xs"
+              >
+                <option value="Rede Municipal - Geral">🌐 Todas as Escolas (Rede Global)</option>
+                {escolas.map((e) => (
+                  <option key={e.id} value={e.nome}>
+                    {e.nome} ({e.regiao})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Componente da Folha A4 Imprimível */}
-        <PdfReportView escolaNome={selectedEscola} regiao={regiao} />
-      </main>
-    </div>
+        <div className="bg-white rounded-3xl p-4 sm:p-8 border border-slate-200/90 shadow-sm overflow-x-auto">
+          <PdfReportView escolaNome={selectedEscola} regiao={regiao} />
+        </div>
+      </div>
+    </AppShell>
   );
 }

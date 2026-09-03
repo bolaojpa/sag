@@ -2,14 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Header } from '@/components/layout/Header';
-import { Nav } from '@/components/layout/Nav';
+import { AppShell } from '@/components/layout/AppShell';
 import { CheckInButton } from '@/components/checkin/CheckInButton';
 import { AcaoForm } from '@/components/acoes/AcaoForm';
 import { IntercorrenciaForm } from '@/components/intercorrencias/IntercorrenciaForm';
 import { Escola } from '@/types/database';
 import { initOfflineSyncListener } from '@/lib/offline/sync';
-import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert, Building2, Eye } from 'lucide-react';
+import { Sparkles, CheckCircle2, Activity, Users, ShieldAlert, Building2, Eye, MapPin } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { SchoolProfileModal } from '@/components/modals/SchoolProfileModal';
 import { ActivityStream } from '@/components/dashboard/ActivityStream';
@@ -20,7 +19,7 @@ const AgentSchoolMapView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-80 bg-slate-100 rounded-2xl border-2 border-slate-200 flex items-center justify-center text-slate-500 font-extrabold text-xs">
+      <div className="w-full h-80 bg-slate-100 rounded-3xl border border-slate-200 flex items-center justify-center text-slate-500 font-extrabold text-xs">
         Carregando mapa OpenStreetMap...
       </div>
     ),
@@ -59,26 +58,17 @@ export default function HubOperacionalPage() {
       try {
         const res = await fetch('/api/escolas');
         if (res.ok) {
-          const json = await res.json();
-          if (json && json.data && json.data.length > 0) {
-            setEscolasList(json.data);
+          const result = await res.json();
+          if (result.data && Array.isArray(result.data)) {
+            setEscolasList(result.data);
             if (typeof window !== 'undefined') {
-              localStorage.setItem('sag_escolas_v7', JSON.stringify(json.data));
+              localStorage.setItem('sag_escolas_v7', JSON.stringify(result.data));
             }
-            return;
           }
         }
-
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        const { data } = await supabase.from('escolas').select('*').order('nome', { ascending: true });
-        if (data && data.length > 0) {
-          setEscolasList(data);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('sag_escolas_v7', JSON.stringify(data));
-          }
-        }
-      } catch (err) {}
+      } catch (err) {
+        console.warn('Erro ao buscar escolas da API:', err);
+      }
     };
 
     fetchEscolas();
@@ -87,14 +77,10 @@ export default function HubOperacionalPage() {
       window.location.href = '/login';
     }
 
-    const cleanupSync = initOfflineSyncListener((syncedCount) => {
-      setSyncNotice(`${syncedCount} registro(s) offline sincronizado(s) com sucesso!`);
-      setTimeout(() => setSyncNotice(null), 5000);
+    initOfflineSyncListener((count) => {
+      setSyncNotice(`⚡ Sincronização Concluída: ${count} registros enviados ao servidor.`);
+      setTimeout(() => setSyncNotice(null), 6000);
     });
-
-    return () => {
-      if (cleanupSync) cleanupSync();
-    };
   }, [loading, user, profile]);
 
   const agentGrupo = (profile?.grupo_id || 'Grupo 01').trim();
@@ -116,7 +102,7 @@ export default function HubOperacionalPage() {
     return (
       <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center">
         <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-white text-xs font-bold mt-3">Carregando Dashboard Admin SAG...</p>
+        <p className="text-white text-xs font-bold mt-3">Carregando Hub Operacional SAG...</p>
       </div>
     );
   }
@@ -125,17 +111,15 @@ export default function HubOperacionalPage() {
     return null;
   }
 
-  // Visão do ADMIN: Renderiza a Dashboard Exata da Imagem
+  // Visão do ADMIN na raiz (/): Renderiza a Dashboard Exata da Imagem
   if (isAdmin) {
     return <AdminDashboardView escolas={escolasList} />;
   }
 
+  // Visão do AGENTE DE CAMPO: Renderiza dentro da mesma casca moderna AppShell (Sidebar + Header + Visual Limpo)
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Header />
-      <Nav />
-
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-6">
+    <AppShell title="Hub Operacional & Ações de Campo">
+      <div className="space-y-6 max-w-5xl mx-auto">
         {/* Banner de Sincronização Concluída */}
         {syncNotice && (
           <div className="bg-emerald-600 text-white p-4 rounded-2xl shadow-md flex items-center justify-between text-sm font-extrabold animate-pulse">
@@ -146,40 +130,40 @@ export default function HubOperacionalPage() {
           </div>
         )}
 
-        {/* Header da Jornada CRM de Campo */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Header da Jornada CRM do Agente */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[11px] uppercase font-extrabold tracking-wider bg-red-50 text-red-700 px-3 py-0.5 rounded-full border border-red-200">
                 Programa Iniciativa Futuro
               </span>
               <span className="text-[11px] uppercase font-bold text-slate-500">
-                Hub Operacional CRM
+                Agente de Campo
               </span>
             </div>
-            <h2 className="text-xl font-extrabold text-slate-900 mt-1">
+            <h2 className="text-xl font-black text-slate-900 mt-1">
               {profile?.nome || 'Servidor Educacional'}
             </h2>
-            <p className="text-xs text-slate-600 font-semibold mt-0.5">
-              Cargo: <span className="font-extrabold text-slate-900 uppercase">{cargo.replace('_', ' ')}</span> | Grupo Escalado:{' '}
-              <span className="font-extrabold text-red-700">{isAdmin ? '-' : agentGrupo}</span>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Regional: <span className="font-bold text-slate-800">{regiao || 'Polo Municipal'}</span> | Grupo:{' '}
+              <span className="font-extrabold text-red-600">{agentGrupo}</span>
             </p>
           </div>
           <div className="flex items-center gap-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
             <Sparkles className="w-5 h-5 text-red-600" />
             <div className="text-left text-xs">
-              <p className="font-extrabold text-slate-900">PWA Contingência Offline</p>
-              <p className="text-[11px] text-slate-500 font-medium">Modo de Coleta Rápida (&lt; 3 min)</p>
+              <p className="font-extrabold text-slate-900">PWA Offline Ativo</p>
+              <p className="text-[11px] text-slate-500 font-medium">Coleta Rápida em Campo</p>
             </div>
           </div>
         </div>
 
         {/* Seletor Interativo de Polo / Regional */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-red-600" />
             <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-              Filtrar Unidades Escolares por Polo:
+              Filtrar Unidades:
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
@@ -189,7 +173,7 @@ export default function HubOperacionalPage() {
                 onClick={() => setSelectedPoloFilter(polo)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all border ${
                   selectedPoloFilter === polo
-                    ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                    ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white border-transparent shadow-sm'
                     : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                 }`}
               >
@@ -199,55 +183,26 @@ export default function HubOperacionalPage() {
           </div>
         </div>
 
-        {/* Resumo Métrico da Jornada do Agente */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl shrink-0">
-              <Activity className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Check-ins Hoje</p>
-              <p className="text-base sm:text-lg font-black text-slate-900">1 Escola</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl shrink-0">
-              <Users className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Alunos Impactados</p>
-              <p className="text-base sm:text-lg font-black text-slate-900">Atendimento Ativo</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-3">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl shrink-0">
-              <ShieldAlert className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Intercorrências</p>
-              <p className="text-base sm:text-lg font-black text-slate-900">Semáforo Ativo</p>
-            </div>
-          </div>
+        {/* NOVO MÓDULO: Mapa do OpenStreetMap Leaflet.js para Agentes com Botão de Rota GPS */}
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-sm">
+          <AgentSchoolMapView
+            escolas={displayEscolas}
+            grupoNome={isAdmin ? (selectedPoloFilter === 'todos' ? 'Todas as Unidades (Visão Admin)' : selectedPoloFilter) : agentGrupo}
+          />
         </div>
 
-        {/* NOVO MÓDULO: Mapa do OpenStreetMap Leaflet.js para Agentes com Botão de Rota GPS */}
-        <AgentSchoolMapView
-          escolas={displayEscolas}
-          grupoNome={isAdmin ? (selectedPoloFilter === 'todos' ? 'Todas as Unidades (Visão Admin)' : selectedPoloFilter) : agentGrupo}
-        />
-
         {/* Módulo 1: Check-in Transparente via GPS */}
-        <CheckInButton
-          escolas={displayEscolas}
-          selectedEscolaId={selectedEscolaId}
-          onSelectEscola={setSelectedEscolaId}
-        />
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-sm">
+          <CheckInButton
+            escolas={displayEscolas}
+            selectedEscolaId={selectedEscolaId}
+            onSelectEscola={setSelectedEscolaId}
+          />
+        </div>
 
         {/* Botão de Atalho para Abrir Perfil CRM da Escola Selecionada */}
         {displayEscolas.length > 0 && (
-          <div className="bg-slate-100 p-3.5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="bg-slate-100/90 p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-slate-800 font-bold">
               <Building2 className="w-4 h-4 text-red-600" />
               <span>Unidade Selecionada: <strong className="text-slate-900">{displayEscolas.find((e) => e.id === selectedEscolaId)?.nome || 'Selecione uma escola'}</strong></span>
@@ -258,7 +213,7 @@ export default function HubOperacionalPage() {
                 const found = displayEscolas.find((e) => e.id === selectedEscolaId);
                 if (found) handleOpenSchoolModal(found);
               }}
-              className="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5 text-red-700 hover:text-red-800 border-red-200"
+              className="bg-white hover:bg-slate-50 text-red-600 border border-slate-200 font-extrabold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-colors"
             >
               <Eye className="w-4 h-4 text-red-600" />
               <span>Ver Perfil CRM da Escola</span>
@@ -268,7 +223,7 @@ export default function HubOperacionalPage() {
 
         {/* Módulo 2: Seletor de Ação x Intercorrência */}
         <div className="space-y-4">
-          <div className="flex bg-slate-200/80 p-1.5 rounded-2xl border border-slate-300/80">
+          <div className="flex bg-slate-200/70 p-1.5 rounded-2xl border border-slate-300/80">
             <button
               onClick={() => setActiveTab('acoes')}
               className={`flex-1 py-3 text-xs sm:text-sm font-extrabold rounded-xl transition-all ${
@@ -283,7 +238,7 @@ export default function HubOperacionalPage() {
               onClick={() => setActiveTab('intercorrencia')}
               className={`flex-1 py-3 text-xs sm:text-sm font-extrabold rounded-xl transition-all ${
                 activeTab === 'intercorrencia'
-                  ? 'bg-red-600 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -291,15 +246,19 @@ export default function HubOperacionalPage() {
             </button>
           </div>
 
-          {activeTab === 'acoes' ? (
-            <AcaoForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
-          ) : (
-            <IntercorrenciaForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
-          )}
+          <div className="bg-white rounded-3xl p-4 sm:p-8 border border-slate-200/90 shadow-sm">
+            {activeTab === 'acoes' ? (
+              <AcaoForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
+            ) : (
+              <IntercorrenciaForm escolaId={selectedEscolaId} agenteId={user?.id || 'agente_demo_123'} />
+            )}
+          </div>
         </div>
 
         {/* Feed de Atividades CRM em Tempo Real */}
-        <ActivityStream />
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm">
+          <ActivityStream />
+        </div>
 
         {/* Modal CRM de Perfil da Escola */}
         <SchoolProfileModal
@@ -308,7 +267,7 @@ export default function HubOperacionalPage() {
           onClose={() => setIsModalOpen(false)}
           onSelectForCheckIn={(id) => setSelectedEscolaId(id)}
         />
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

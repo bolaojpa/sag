@@ -20,9 +20,11 @@ import { useAuth } from '@/context/AuthContext';
 
 interface AdminSidebarProps {
   children?: React.ReactNode;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
+export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children, isOpen, onClose }) => {
   const pathname = usePathname();
   const { user, profile, cargo, signOut } = useAuth();
 
@@ -45,7 +47,21 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
   };
 
   return (
-    <aside className="w-64 bg-[#0f172a] text-white flex flex-col justify-between shrink-0 min-h-screen border-r border-slate-800 select-none">
+    <>
+      {/* Backdrop for Mobile Drawer */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-300"
+        />
+      )}
+
+      {/* Sidebar Navigation */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0f172a] text-white flex flex-col justify-between shrink-0 min-h-screen border-r border-slate-800 select-none transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        }`}
+      >
       {/* Top Section: Logo & Navigation Links */}
       <div>
         {/* Logo SAG Iniciativa Futuro */}
@@ -112,6 +128,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 };

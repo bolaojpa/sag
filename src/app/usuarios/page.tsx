@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { Header } from '@/components/layout/Header';
-import { Nav } from '@/components/layout/Nav';
+import { AppShell } from '@/components/layout/AppShell';
 import { CargoType, Escola } from '@/types/database';
 import { UserPlus, Shield, UserCheck, Trash2, CheckCircle2, Mail, Building2, MapPin, Plus, Users, Calendar, Clock, Navigation, Pencil, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -565,61 +564,67 @@ function UsuariosPageContent() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Header />
-      <Nav />
-
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <AppShell
+      title="Gestão de Unidades, Escalas & Servidores"
+      onNewActionClick={() => {
+        setActiveTab('escolas');
+        const formElement = document.getElementById('form-cadastro-escola');
+        if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+      }}
+    >
+      <div className="space-y-6">
         {/* Banner CRM de Gestão de Acessos e Escolas */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <Shield className="w-6 h-6 text-red-600" />
-              <h1 className="text-xl font-extrabold text-slate-900">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-red-50 text-red-600 rounded-xl">
+                <Shield className="w-6 h-6 text-red-600" />
+              </div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">
                 Painel da Coordenação: Cadastro, Escala & Whitelist
-              </h1>
+              </h2>
             </div>
-            <p className="text-xs text-slate-600 mt-1 font-medium">
+            <p className="text-xs text-slate-500 font-medium mt-1">
               1. Cadastro Inicial no Mapa (Pino Reverso) • 2. Atribuição de Visita por Polo aos Grupos • 3. Whitelist de Servidores
             </p>
           </div>
 
           {/* Abas Alternáveis de Gestão */}
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 flex-wrap gap-1">
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 flex-wrap gap-1">
             <button
               onClick={() => setActiveTab('escolas')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 ${
                 activeTab === 'escolas'
-                  ? 'bg-red-600 text-white shadow-sm'
-                  : 'text-slate-700 hover:text-slate-900'
+                  ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
               <Building2 className="w-4 h-4" />
-              <span>1. Cadastro Inicial de Unidades ({escolasList.length})</span>
+              <span>1. Cadastro Inicial ({escolasList.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('escala')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 ${
                 activeTab === 'escala'
-                  ? 'bg-red-600 text-white shadow-sm'
-                  : 'text-slate-700 hover:text-slate-900'
+                  ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
               <Calendar className="w-4 h-4" />
-              <span>2. Escala & Atribuição por Polo</span>
+              <span>2. Escala & Atribuição</span>
             </button>
 
             <button
               onClick={() => setActiveTab('whitelist')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 ${
                 activeTab === 'whitelist'
-                  ? 'bg-red-600 text-white shadow-sm'
-                  : 'text-slate-700 hover:text-slate-900'
+                  ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
               <Users className="w-4 h-4" />
-              <span>3. Whitelist & Servidores ({usuariosList.length})</span>
+              <span>3. Whitelist ({usuariosList.length})</span>
             </button>
           </div>
         </div>
@@ -1145,19 +1150,19 @@ function UsuariosPageContent() {
             </div>
           </div>
         )}
-      </main>
 
-      {/* Caixa de Confirmação Global para Operações de Cadastro, Edição e Exclusão */}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        confirmText={confirmModal.confirmText}
-        variant={confirmModal.variant}
-        onConfirm={handleConfirmAction}
-        onCancel={closeConfirmModal}
-      />
-    </div>
+        {/* Caixa de Confirmação Global para Operações de Cadastro, Edição e Exclusão */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmText={confirmModal.confirmText}
+          variant={confirmModal.variant}
+          onConfirm={handleConfirmAction}
+          onCancel={closeConfirmModal}
+        />
+      </div>
+    </AppShell>
   );
 }
 
