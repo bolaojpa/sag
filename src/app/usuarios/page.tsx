@@ -43,9 +43,11 @@ interface ModalConfig {
 import { useSearchParams } from 'next/navigation';
 
 function UsuariosPageContent() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, cargo, loading } = useAuth();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'whitelist' | 'escolas' | 'escala'>('escolas');
+
+  const isAdmin = ['coordenacao_geral', 'coordenador_dados', 'coordenacao_area', 'gerente_polo'].includes(cargo);
 
   useEffect(() => {
     if (searchParams) {
@@ -336,6 +338,7 @@ function UsuariosPageContent() {
   };
 
   const executeSaveEscola = async () => {
+    if (!isAdmin) return;
     const nomeClean = escolaNome.trim();
     const coordsString = `${escolaLat.toFixed(6)},${escolaLng.toFixed(6)}`;
 
@@ -441,6 +444,10 @@ function UsuariosPageContent() {
 
   const requestSaveEscola = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) {
+      alert('Acesso negado: Somente administradores podem cadastrar ou editar escolas.');
+      return;
+    }
     if (!escolaNome.trim()) return;
 
     const title = editingEscolaId
@@ -462,6 +469,7 @@ function UsuariosPageContent() {
   };
 
   const executeRemoveEscola = async (id: string) => {
+    if (!isAdmin) return;
     const updated = escolasList.filter((e) => e.id !== id);
     saveEscolasState(updated);
 
@@ -477,6 +485,10 @@ function UsuariosPageContent() {
   };
 
   const requestRemoveEscola = (id: string, nome: string) => {
+    if (!isAdmin) {
+      alert('Acesso negado: Somente administradores podem excluir unidades escolares.');
+      return;
+    }
     setConfirmModal({
       isOpen: true,
       title: 'Excluir Unidade Escolar',
@@ -641,23 +653,32 @@ function UsuariosPageContent() {
               </div>
             )}
 
-            {/* Form de Cadastro & Edição de Unidade Escolar */}
-            <div id="form-cadastro-escola" className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-red-600" />
-                  <h2 className="text-base font-extrabold text-slate-900">
-                    {editingEscolaId
-                      ? 'Edição de Unidade Escolar Cadastrada'
-                      : 'Cadastro Inicial da Unidade Escolar (Mapeamento Geográfico no OpenStreetMap)'}
-                  </h2>
-                </div>
-                {editingEscolaId && (
-                  <span className="bg-blue-100 text-blue-900 text-xs font-black px-3 py-1 rounded-full border border-blue-300 animate-pulse">
-                    ✏️ Modo Edição Ativo
-                  </span>
-                )}
+            {/* Banner Informativo de Permissão para Não-Admins */}
+            {!isAdmin && (
+              <div className="bg-amber-50 border border-amber-300 text-amber-950 p-4 rounded-2xl text-xs font-bold flex items-center gap-3">
+                <Shield className="w-5 h-5 text-amber-600 shrink-0" />
+                <span>Modo Somente Leitura: Apenas Administradores Gerais e Coordenação possuem permissão para cadastrar, editar ou excluir unidades escolares.</span>
               </div>
+            )}
+
+            {/* Form de Cadastro & Edição de Unidade Escolar (Exclusivo para ADMINS) */}
+            {isAdmin && (
+              <div id="form-cadastro-escola" className="bg-white border-l-4 border-l-red-600 border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-red-600" />
+                    <h2 className="text-base font-extrabold text-slate-900">
+                      {editingEscolaId
+                        ? 'Edição de Unidade Escolar Cadastrada'
+                        : 'Cadastro Inicial da Unidade Escolar (Mapeamento Geográfico no OpenStreetMap)'}
+                    </h2>
+                  </div>
+                  {editingEscolaId && (
+                    <span className="bg-blue-100 text-blue-900 text-xs font-black px-3 py-1 rounded-full border border-blue-300 animate-pulse">
+                      ✏️ Modo Edição Ativo
+                    </span>
+                  )}
+                </div>
 
               <form onSubmit={requestSaveEscola} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -739,6 +760,7 @@ function UsuariosPageContent() {
                 </div>
               </form>
             </div>
+            )}
 
             {/* Tabela de Unidades Cadastradas */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
@@ -789,24 +811,28 @@ function UsuariosPageContent() {
                           </span>
                         </td>
                         <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleEditEscolaClick(escola)}
-                              className="text-blue-600 hover:text-blue-800 p-1.5 rounded-lg hover:bg-blue-50 transition-colors border border-blue-200 shadow-sm flex items-center gap-1 font-bold"
-                              title="Editar Informações da Escola"
-                            >
-                              <Pencil className="w-4 h-4 text-blue-600" />
-                              <span className="hidden sm:inline text-[11px]">Editar</span>
-                            </button>
+                          {isAdmin ? (
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => handleEditEscolaClick(escola)}
+                                className="text-blue-600 hover:text-blue-800 p-1.5 rounded-lg hover:bg-blue-50 transition-colors border border-blue-200 shadow-sm flex items-center gap-1 font-bold"
+                                title="Editar Informações da Escola"
+                              >
+                                <Pencil className="w-4 h-4 text-blue-600" />
+                                <span className="hidden sm:inline text-[11px]">Editar</span>
+                              </button>
 
-                            <button
-                              onClick={() => requestRemoveEscola(escola.id, escola.nome)}
-                              className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50 transition-colors border border-red-200 shadow-sm"
-                              title="Remover Escola da Rede"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </button>
-                          </div>
+                              <button
+                                onClick={() => requestRemoveEscola(escola.id, escola.nome)}
+                                className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50 transition-colors border border-red-200 shadow-sm"
+                                title="Remover Escola da Rede"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-bold">Somente Leitura</span>
+                          )}
                         </td>
                       </tr>
                     ))}
